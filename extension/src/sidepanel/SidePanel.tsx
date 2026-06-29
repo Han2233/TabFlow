@@ -261,33 +261,33 @@ export default function SidePanel() {
       </main>
 
       {/* Bottom Actions */}
-      <footer className="border-t border-gray-200 p-3 space-y-2">
+      <footer className="border-t border-gray-200 px-3 py-2 space-y-1">
         <button
-          className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
           onClick={() => setShowManager(true)}
         >
           ⚙️ 管理分组
         </button>
         <button
-          className='w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors'
+          className='w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors'
           onClick={() => setShowSnapshot(true)}
         >
           📸 工作区快照
         </button>
         <button
-          className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
           onClick={() => setShowSplitWindows(true)}
         >
           🪟 一键分窗口
         </button>
         <button
-          className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
           onClick={() => setShowDuplicates(true)}
         >
           🔍 重复检测
         </button>
         <button
-          className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
           onClick={() => setShowSettings(true)}
         >
           ⚙️ 设置
