@@ -27,71 +27,40 @@ export function buildSplitGroups(
   return result
 }
 
-/** 为一个分组创建独立窗口：创建空窗口 → 逐个创建标签页 → 关闭旧标签页 → 设置 Tab Group */
-async function createWindowWithGroup(group: SplitGroup, focused: boolean) {
-  if (group.tabs.length === 0) return
-  const urls = group.tabs.map((t) => t.url).filter(Boolean)
+/** 创建一个浏览器窗口，打开该分组所有标签页 */
+async function createWindowWithUrls(urls: string[], focused: boolean) {
   if (urls.length === 0) return
-
-  const oldTabIds = group.tabs.map((t) => t.id)
-
-  // 1. 创建空窗口
-  const win = await chrome.windows.create({ focused })
-  if (!win || !win.id) return
-
-  // 2. 等待窗口就绪
-  await new Promise((r) => setTimeout(r, 300))
-
-  // 3. 逐个在新窗口中创建标签页
-  for (const url of urls) {
-    await chrome.tabs.create({ windowId: win.id, url, active: false })
-  }
-
-  // 4. 关闭原始标签页
-  await chrome.tabs.remove(oldTabIds)
-
-  // 5. 设置 Chrome Tab Group
-  const newTabs = await chrome.tabs.query({ windowId: win.id })
-  if (newTabs.length >= 2) {
-    const tabIds = newTabs.map((t) => t.id!).filter(Boolean)
-    if (tabIds.length >= 2) {
-      try {
-        const groupId = await chrome.tabs.group({ tabIds: tabIds as [number, ...number[]] })
-        await chrome.tabGroups.update(groupId, {
-          title: group.name,
-          color: toChromeColor(group.color),
-        })
-      } catch {
-        // ignore
-      }
-    }
-  }
+  await chrome.windows.create({ url: urls, focused, type: 'normal' })
 }
 
 export async function splitToNewWindows(splitGroups: SplitGroup[]) {
   for (const group of splitGroups) {
-    await createWindowWithGroup(group, false)
+    const urls = group.tabs.map((t) => t.url).filter(Boolean)
+    await createWindowWithUrls(urls, false)
+    // 窗口间稍作间隔，避免 Chrome 限流
+    await new Promise((r) => setTimeout(r, 500))
   }
 }
 
 export async function splitReplaceCurrent(splitGroups: SplitGroup[]) {
-  // 为每个分组创建新窗口
-  for (let i = 0; i < splitGroups.length; i++) {
-    await createWindowWithGroup(splitGroups[i], i === 0)
-  }
+  // 收集所有新 URL
+  const allUrls: string[][] = splitGroups
+    .map((g) => g.tabs.map((t) => t.url).filter(Boolean))
+    .filter((urls) => urls.length > 0)
 
-  // 关闭所有残留的旧窗口
-  const remaining = await chrome.windows.getAll({ populate: true })
-  for (const w of remaining) {
-    if (w.id && w.type === 'normal' && (!w.tabs || w.tabs.length === 0)) {
+  // 关闭所有现有窗口
+  const existing = await chrome.windows.getAll()
+  for (const w of existing) {
+    if (w.id && w.type === 'normal') {
       await chrome.windows.remove(w.id)
     }
   }
-}
 
-function toChromeColor(color: string) {
-  const valid = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange']
-  return (valid.includes(color) ? color : 'grey') as 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan' | 'orange'
+  // 创建新窗口
+  for (let i = 0; i < allUrls.length; i++) {
+    await createWindowWithUrls(allUrls[i], i === 0)
+    await new Promise((r) => setTimeout(r, 500))
+  }
 }
 
 // ====== 时间追踪 ======

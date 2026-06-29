@@ -55,7 +55,7 @@ export function SplitWindows({ onClose }: SplitWindowsProps) {
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         <p className="text-xs text-gray-500">
-          每个分组将创建一个独立窗口，原窗口中的标签页会被移入新窗口：
+          每个分组将在独立的新浏览器窗口中打开，原标签页保持不变：
         </p>
 
         {splitGroups.map((sg, i) => (
