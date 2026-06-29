@@ -1,21 +1,18 @@
-import { getPendingConfig, type PendingConfig, DEFAULT_PENDING_CONFIG } from '../store/closeHistoryStore'
-import { useCloseHistoryStore, type ClosedTab } from '../store/closeHistoryStore'
+import { getPendingConfig, DEFAULT_PENDING_CONFIG } from '../store/closeHistoryStore'
+import { useCloseHistoryStore } from '../store/closeHistoryStore'
 
-/** 正在软关闭的标签页 { tabId → PendingInfo } */
+/** 正在软关闭的标签页 */
 type PendingInfo = { tabId: number; url: string; title: string; favIconUrl?: string; windowId: number; expiresAt: number; timer: ReturnType<typeof setTimeout> }
 const pendingMap = new Map<number, PendingInfo>()
 
-/** 获取当前所有软关闭中的 tabId 集合 */
 export function getPendingCloseIds(): Set<number> {
   return new Set(pendingMap.keys())
 }
 
-/** 获取软关闭中的 tab 信息 */
 export function getPendingInfo(tabId: number): PendingInfo | undefined {
   return pendingMap.get(tabId)
 }
 
-/** 取消软关闭（撤销） */
 export function cancelPendingClose(tabId: number) {
   const info = pendingMap.get(tabId)
   if (info) {
@@ -24,7 +21,6 @@ export function cancelPendingClose(tabId: number) {
   }
 }
 
-/** 立即执行关闭（跳过等待） */
 export function forceClose(tabId: number) {
   const info = pendingMap.get(tabId)
   if (info) {
@@ -34,24 +30,26 @@ export function forceClose(tabId: number) {
   }
 }
 
-/** 软关闭一个标签页 */
+/** 软关闭一个标签页，返回是否进入了暂留模式 */
 export async function softCloseTab(
   tabId: number,
   url: string,
   title: string,
   favIconUrl: string | undefined,
   windowId: number,
-) {
+): Promise<boolean> {
   const config = await getPendingConfig()
+  // 防御旧配置：旧版本用 delaySeconds，新版本用 delayMinutes
+  const delayMinutes = config.delayMinutes ?? (config as unknown as Record<string, number>).delaySeconds ?? DEFAULT_PENDING_CONFIG.delayMinutes
 
-  if (!config.enabled || config.delayMinutes === 0) {
-    // 直接关闭
+  if (!config.enabled || delayMinutes <= 0) {
     await chrome.tabs.remove(tabId)
     recordToHistory(url, title, favIconUrl)
-    return
+    return false // 直接关闭，无暂留
   }
 
-  const expiresAt = Date.now() + config.delayMinutes * 60 * 1000
+  const delayMs = delayMinutes * 60 * 1000
+  const expiresAt = Date.now() + delayMs
   const timer = setTimeout(async () => {
     pendingMap.delete(tabId)
     try {
@@ -60,12 +58,12 @@ export async function softCloseTab(
       // tab 可能已经不存在了
     }
     recordToHistory(url, title, favIconUrl)
-  }, config.delayMinutes * 60 * 1000)
+  }, delayMs)
 
   pendingMap.set(tabId, { tabId, url, title, favIconUrl, windowId, expiresAt, timer })
+  return true // 进入了暂留模式
 }
 
-/** 记录到关闭历史 */
 function recordToHistory(url: string, title: string, favIconUrl: string | undefined) {
   const store = useCloseHistoryStore.getState()
   store.addToHistory({
@@ -77,7 +75,6 @@ function recordToHistory(url: string, title: string, favIconUrl: string | undefi
   })
 }
 
-/** 初始化：加载历史 + 清理过期 */
 export async function initCloseHistory() {
   const store = useCloseHistoryStore.getState()
   await store.load()
@@ -85,7 +82,6 @@ export async function initCloseHistory() {
   await store.clearOlderThan(config.historyDays)
 }
 
-/** 批量关闭 */
 export async function softCloseTabs(
   tabs: Array<{ id: number; url: string; title: string; favIconUrl?: string; windowId: number }>,
 ) {

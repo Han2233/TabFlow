@@ -41,7 +41,16 @@ export const DEFAULT_PENDING_CONFIG: PendingConfig = {
 
 export async function getPendingConfig(): Promise<PendingConfig> {
   const result = await chrome.storage.local.get(STORAGE_PENDING_CONFIG)
-  return (result[STORAGE_PENDING_CONFIG] as PendingConfig) || DEFAULT_PENDING_CONFIG
+  const raw = (result[STORAGE_PENDING_CONFIG] as Record<string, unknown>) || {}
+  // 迁移旧版本配置：delaySeconds → delayMinutes
+  if (raw.delaySeconds !== undefined && raw.delayMinutes === undefined) {
+    raw.delayMinutes = Math.max(1, Math.round((raw.delaySeconds as number) / 60))
+    delete raw.delaySeconds
+    await chrome.storage.local.set({ [STORAGE_PENDING_CONFIG]: raw })
+  }
+  return (raw as unknown as PendingConfig).delayMinutes !== undefined
+    ? (raw as unknown as PendingConfig)
+    : DEFAULT_PENDING_CONFIG
 }
 
 export async function savePendingConfig(config: PendingConfig) {

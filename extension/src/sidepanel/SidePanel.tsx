@@ -142,7 +142,11 @@ export default function SidePanel() {
     async (tabId: number) => {
       const tab = allTabs.find((t) => t.id === tabId)
       if (tab) {
-        await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
+        const pending = await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
+        if (pending) {
+          // 进入暂留模式，立即更新 pendingIds 显示灰色
+          setPendingIds(getPendingCloseIds())
+        }
         await refresh()
       }
     },
