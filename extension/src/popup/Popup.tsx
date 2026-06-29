@@ -127,13 +127,6 @@ export default function Popup() {
         </button>
       </div>
 
-      {/* 快捷键提示 */}
-      <div className="mt-3 pt-2 border-t border-gray-100">
-        <div className="text-xs text-gray-400 space-y-0.5">
-          <div><kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">⌘Shift+F</kbd> 搜索标签页</div>
-          <div><kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">⌘Shift+G</kbd> 打开侧边栏</div>
-        </div>
-      </div>
     </div>
   )
 }

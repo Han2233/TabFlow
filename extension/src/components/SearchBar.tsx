@@ -14,18 +14,6 @@ export function SearchBar({ allTabs, groupNameMap }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // 监听来自 background 的聚焦消息
-  useEffect(() => {
-    const handleMessage = (message: { action: string }) => {
-      if (message.action === 'focusSearch') {
-        inputRef.current?.focus()
-      }
-    }
-    chrome.runtime.onMessage.addListener(handleMessage)
-    return () => {
-      chrome.runtime.onMessage.removeListener(handleMessage)
-    }
-  }, [])
 
   // 过滤结果
   const results = useMemo(() => {

@@ -21,22 +21,6 @@
     "default_title": "TabFlow",
     "default_popup": "src/popup/index.html"
   },
-  "commands": {
-    "open_side_panel": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+G",
-        "mac": "Command+Shift+G"
-      },
-      "description": "打开/关闭侧边栏面板"
-    },
-    "search_tabs": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+F",
-        "mac": "Command+Shift+F"
-      },
-      "description": "搜索标签页"
-    }
-  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

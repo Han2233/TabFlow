@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useTabStore } from '../store/tabStore'
 import { useGroupStore } from '../store/groupStore'
 import { WindowGroup } from '../components/WindowGroup'
@@ -21,8 +21,6 @@ export default function SidePanel() {
 
   const [viewMode, setViewMode] = useState<ViewMode>('grouped')
   const [showManager, setShowManager] = useState(false)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-
   // 加载分组数据
   useEffect(() => {
     loadGroups()
@@ -55,20 +53,6 @@ export default function SidePanel() {
       chrome.windows.onFocusChanged.removeListener(onTabEvent)
     }
   }, [refresh])
-
-  // 监听来自 background 的消息（快捷键触发搜索框聚焦）
-  useEffect(() => {
-    const handleMessage = (message: { action: string }) => {
-      if (message.action === 'focusSearch') {
-        // 聚焦搜索框——SearchBar 暴露 ref 聚焦
-        searchInputRef.current?.focus()
-      }
-    }
-    chrome.runtime.onMessage.addListener(handleMessage)
-    return () => {
-      chrome.runtime.onMessage.removeListener(handleMessage)
-    }
-  }, [])
 
   // 所有标签页的扁平列表
   const allTabs = useMemo(
