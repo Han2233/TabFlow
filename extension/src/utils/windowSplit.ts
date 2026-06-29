@@ -27,30 +27,43 @@ export function buildSplitGroups(
   return result
 }
 
-/** 为一个分组创建独立窗口：创建空窗口 → 将标签页移入 → 设置 Tab Group */
+/** 为一个分组创建独立窗口：创建空窗口 → 逐个创建标签页 → 关闭旧标签页 → 设置 Tab Group */
 async function createWindowWithGroup(group: SplitGroup, focused: boolean) {
   if (group.tabs.length === 0) return
+  const urls = group.tabs.map((t) => t.url).filter(Boolean)
+  if (urls.length === 0) return
 
-  // 1. 创建一个空窗口
+  const oldTabIds = group.tabs.map((t) => t.id)
+
+  // 1. 创建空窗口
   const win = await chrome.windows.create({ focused })
   if (!win || !win.id) return
 
-  // 2. 将该分组的标签页移入新窗口
-  const tabIds = group.tabs.map((t) => t.id)
-  await chrome.tabs.move(tabIds, { windowId: win.id, index: -1 })
+  // 2. 等待窗口就绪
+  await new Promise((r) => setTimeout(r, 300))
 
-  // 3. 设置 Chrome Tab Group
-  if (tabIds.length >= 2) {
-    // 移动后标签页 ID 不变，但需要确保它们都在新窗口中了
-    await new Promise((r) => setTimeout(r, 100))
-    try {
-      const groupId = await chrome.tabs.group({ tabIds: tabIds as [number, ...number[]] })
-      await chrome.tabGroups.update(groupId, {
-        title: group.name,
-        color: toChromeColor(group.color),
-      })
-    } catch {
-      // ignore
+  // 3. 逐个在新窗口中创建标签页
+  for (const url of urls) {
+    await chrome.tabs.create({ windowId: win.id, url, active: false })
+  }
+
+  // 4. 关闭原始标签页
+  await chrome.tabs.remove(oldTabIds)
+
+  // 5. 设置 Chrome Tab Group
+  const newTabs = await chrome.tabs.query({ windowId: win.id })
+  if (newTabs.length >= 2) {
+    const tabIds = newTabs.map((t) => t.id!).filter(Boolean)
+    if (tabIds.length >= 2) {
+      try {
+        const groupId = await chrome.tabs.group({ tabIds: tabIds as [number, ...number[]] })
+        await chrome.tabGroups.update(groupId, {
+          title: group.name,
+          color: toChromeColor(group.color),
+        })
+      } catch {
+        // ignore
+      }
     }
   }
 }
@@ -62,14 +75,14 @@ export async function splitToNewWindows(splitGroups: SplitGroup[]) {
 }
 
 export async function splitReplaceCurrent(splitGroups: SplitGroup[]) {
-  // 先为每个分组创建目标窗口并移入标签页
+  // 为每个分组创建新窗口
   for (let i = 0; i < splitGroups.length; i++) {
     await createWindowWithGroup(splitGroups[i], i === 0)
   }
 
-  // 关闭剩余的空窗口（原窗口标签页已被移走，会变为空窗口）
-  const remainingWindows = await chrome.windows.getAll({ populate: true })
-  for (const w of remainingWindows) {
+  // 关闭所有残留的旧窗口
+  const remaining = await chrome.windows.getAll({ populate: true })
+  for (const w of remaining) {
     if (w.id && w.type === 'normal' && (!w.tabs || w.tabs.length === 0)) {
       await chrome.windows.remove(w.id)
     }
