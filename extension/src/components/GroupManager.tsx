@@ -3,15 +3,16 @@ import { useGroupStore } from '../store/groupStore'
 import type { GroupColor, GroupConfig } from '../types'
 
 const COLORS: { value: GroupColor; label: string }[] = [
-  { value: 'grey', label: '灰' },
-  { value: 'blue', label: '蓝' },
-  { value: 'red', label: '红' },
-  { value: 'yellow', label: '黄' },
-  { value: 'green', label: '绿' },
-  { value: 'pink', label: '粉' },
-  { value: 'purple', label: '紫' },
-  { value: 'cyan', label: '青' },
-  { value: 'orange', label: '橙' },
+  { value: 'grey', label: '灰' }, { value: 'blue', label: '蓝' },
+  { value: 'red', label: '红' }, { value: 'yellow', label: '黄' },
+  { value: 'green', label: '绿' }, { value: 'pink', label: '粉' },
+  { value: 'purple', label: '紫' }, { value: 'cyan', label: '青' },
+  { value: 'orange', label: '橙' }, { value: 'teal', label: '青绿' },
+  { value: 'lime', label: '柠绿' }, { value: 'indigo', label: '靛蓝' },
+  { value: 'amber', label: '琥珀' }, { value: 'rose', label: '玫瑰' },
+  { value: 'sky', label: '天蓝' }, { value: 'emerald', label: '翠绿' },
+  { value: 'violet', label: '紫罗' }, { value: 'fuchsia', label: '桃红' },
+  { value: 'slate', label: '岩灰' }, { value: 'zinc', label: '锌灰' },
 ]
 
 interface GroupManagerProps {
@@ -131,6 +132,10 @@ export function GroupManager({ onClose }: GroupManagerProps) {
                           grey: '#9ca3af', blue: '#3b82f6', red: '#ef4444',
                           yellow: '#eab308', green: '#22c55e', pink: '#ec4899',
                           purple: '#a855f7', cyan: '#06b6d4', orange: '#f97316',
+                          teal: '#14b8a6', lime: '#84cc16', indigo: '#6366f1',
+                          amber: '#f59e0b', rose: '#f43f5e', sky: '#0ea5e9',
+                          emerald: '#10b981', violet: '#8b5cf6', fuchsia: '#d946ef',
+                          slate: '#64748b', zinc: '#71717a',
                         }[g.color],
                       }}
                     />
@@ -235,6 +240,10 @@ export function GroupManager({ onClose }: GroupManagerProps) {
                       grey: '#9ca3af', blue: '#3b82f6', red: '#ef4444',
                       yellow: '#eab308', green: '#22c55e', pink: '#ec4899',
                       purple: '#a855f7', cyan: '#06b6d4', orange: '#f97316',
+                      teal: '#14b8a6', lime: '#84cc16', indigo: '#6366f1',
+                      amber: '#f59e0b', rose: '#f43f5e', sky: '#0ea5e9',
+                      emerald: '#10b981', violet: '#8b5cf6', fuchsia: '#d946ef',
+                      slate: '#64748b', zinc: '#71717a',
                     }[c.value],
                   }}
                   onClick={() => setNewColor(c.value)}

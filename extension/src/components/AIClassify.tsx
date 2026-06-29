@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useTabStore } from '../store/tabStore'
 import { useGroupStore } from '../store/groupStore'
+import { GROUP_COLORS } from '../types'
 
 const STORAGE_KEY = 'tabflow_ai_config'
 
@@ -123,7 +124,10 @@ export function AIClassify({ onClose }: AIClassifyProps) {
 
     // 2. 按 AI 结果创建新分组
     for (const g of results) {
-      store.addGroup(g.name, 'blue')
+      // 轮转选色避免重复
+      let colorIndex = (useGroupStore.getState().groups.length + Math.floor(Math.random() * GROUP_COLORS.length)) % GROUP_COLORS.length
+      const color = GROUP_COLORS[colorIndex]
+      store.addGroup(g.name, color)
       await new Promise((r) => setTimeout(r, 100))
 
       // 获取刚创建的分组 ID

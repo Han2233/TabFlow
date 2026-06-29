@@ -9,4 +9,5 @@ export {
   type UngroupedDisplay,
   type ManualAssignments,
   GROUP_COLOR_MAP,
+  GROUP_COLORS,
 } from './tab'

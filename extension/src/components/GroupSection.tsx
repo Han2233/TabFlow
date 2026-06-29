@@ -22,6 +22,17 @@ const COLOR_CLASSES: Record<string, { bg: string; header: string; dot: string }>
   purple:  { bg: 'bg-purple-50', header: 'bg-purple-100', dot: 'bg-purple-500' },
   cyan:    { bg: 'bg-cyan-50',   header: 'bg-cyan-100',   dot: 'bg-cyan-500' },
   orange:  { bg: 'bg-orange-50', header: 'bg-orange-100', dot: 'bg-orange-500' },
+  teal:    { bg: 'bg-teal-50',   header: 'bg-teal-100',   dot: 'bg-teal-500' },
+  lime:    { bg: 'bg-lime-50',   header: 'bg-lime-100',   dot: 'bg-lime-500' },
+  indigo:  { bg: 'bg-indigo-50', header: 'bg-indigo-100', dot: 'bg-indigo-500' },
+  amber:   { bg: 'bg-amber-50',  header: 'bg-amber-100',  dot: 'bg-amber-500' },
+  rose:    { bg: 'bg-rose-50',   header: 'bg-rose-100',   dot: 'bg-rose-500' },
+  sky:     { bg: 'bg-sky-50',    header: 'bg-sky-100',    dot: 'bg-sky-500' },
+  emerald: { bg: 'bg-emerald-50',header: 'bg-emerald-100',dot: 'bg-emerald-500' },
+  violet:  { bg: 'bg-violet-50', header: 'bg-violet-100', dot: 'bg-violet-500' },
+  fuchsia: { bg: 'bg-fuchsia-50',header: 'bg-fuchsia-100',dot: 'bg-fuchsia-500' },
+  slate:   { bg: 'bg-slate-50',  header: 'bg-slate-100',  dot: 'bg-slate-500' },
+  zinc:    { bg: 'bg-zinc-50',   header: 'bg-zinc-100',   dot: 'bg-zinc-500' },
 }
 
 export function GroupSection({ config, tabs, onAssignTab, onUnassignTab }: GroupSectionProps) {
