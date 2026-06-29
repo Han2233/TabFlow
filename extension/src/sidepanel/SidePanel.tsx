@@ -4,6 +4,7 @@ import { useGroupStore } from '../store/groupStore'
 import { WindowGroup } from '../components/WindowGroup'
 import { GroupSection } from '../components/GroupSection'
 import { GroupManager } from '../components/GroupManager'
+import { SnapshotManager } from '../components/SnapshotManager'
 import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
 import { groupTabs } from '../utils/grouping'
@@ -21,6 +22,7 @@ export default function SidePanel() {
 
   const [viewMode, setViewMode] = useState<ViewMode>('grouped')
   const [showManager, setShowManager] = useState(false)
+  const [showSnapshot, setShowSnapshot] = useState(false)
   // 加载分组数据
   useEffect(() => {
     loadGroups()
@@ -126,6 +128,10 @@ export default function SidePanel() {
     return <GroupManager onClose={() => setShowManager(false)} />
   }
 
+  if (showSnapshot) {
+    return <SnapshotManager onClose={() => setShowSnapshot(false)} />
+  }
+
   return (
     <div className="flex flex-col h-screen bg-white">
       {/* Header */}
@@ -218,6 +224,12 @@ export default function SidePanel() {
           onClick={() => setShowManager(true)}
         >
           ⚙️ 管理分组
+        </button>
+        <button
+          className='w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors'
+          onClick={() => setShowSnapshot(true)}
+        >
+          📸 工作区快照
         </button>
       </footer>
     </div>
