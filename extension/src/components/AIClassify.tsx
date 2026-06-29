@@ -102,14 +102,48 @@ export function AIClassify({ onClose }: AIClassifyProps) {
   const handleApply = async () => {
     if (!results) return
     setApplying(true)
+
+    // 1. 清空所有旧分组和手动分配
+    const store = useGroupStore.getState()
+    for (const g of [...store.groups]) {
+      store.deleteGroup(g.id)
+    }
+
+    // 2. 按 AI 结果创建新分组
     for (const g of results) {
-      addGroup(g.name, 'blue')
-      await new Promise((r) => setTimeout(r, 150))
+      store.addGroup(g.name, 'blue')
+      await new Promise((r) => setTimeout(r, 100))
+
+      // 获取刚创建的分组 ID
+      const freshState = useGroupStore.getState()
+      const newGroup = freshState.groups[freshState.groups.length - 1]
+      if (!newGroup) continue
+
+      // 分配标签页
       for (const tid of g.tab_ids) {
-        assignTab(tid, groups[groups.length - 1]?.id || '')
+        store.assignTab(tid, newGroup.id)
+      }
+
+      // 自动生成域名规则：取标签页中最常见的域名
+      const domains = new Map<string, number>()
+      for (const tid of g.tab_ids) {
+        const tab = allTabs.find((t) => t.id === tid)
+        if (tab?.url) {
+          try {
+            const hostname = new URL(tab.url).hostname.replace(/^www\./, '')
+            domains.set(hostname, (domains.get(hostname) || 0) + 1)
+          } catch {}
+        }
+      }
+      const sorted = [...domains.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+      for (const [domain] of sorted) {
+        if (domain && domain.includes('.')) {
+          store.addRule(newGroup.id, domain, 'domain')
+        }
       }
     }
-    setApplying(false); setMsg('✅ 分组已应用')
+
+    setApplying(false); setMsg('✅ 分组已应用（含自动规则）')
     setTimeout(() => onClose(), 1200)
   }
 
