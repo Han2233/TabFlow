@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react'
 import type { TabInfo } from '../types'
-import { activateTab, closeTab } from '../utils/tabs'
+import { activateTab } from '../utils/tabs'
 
 interface TabItemProps {
   tab: TabInfo
   onClose: (tabId: number) => void
+  onUnassign?: (tabId: number) => void
 }
 
-export function TabItem({ tab, onClose }: TabItemProps) {
+export function TabItem({ tab, onClose, onUnassign }: TabItemProps) {
   const [showMenu, setShowMenu] = useState(false)
 
   const handleClick = useCallback(() => {
@@ -32,6 +33,14 @@ export function TabItem({ tab, onClose }: TabItemProps) {
     setShowMenu(false)
   }, [tab.url])
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      e.dataTransfer.setData('tabId', String(tab.id))
+      e.dataTransfer.effectAllowed = 'move'
+    },
+    [tab.id],
+  )
+
   const favicon = tab.favIconUrl
     ? tab.favIconUrl
     : `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(tab.url)}&size=16`
@@ -45,6 +54,8 @@ export function TabItem({ tab, onClose }: TabItemProps) {
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         title={`${tab.title}\n${tab.url}`}
+        draggable
+        onDragStart={handleDragStart}
       >
         <img
           src={favicon}
@@ -76,6 +87,17 @@ export function TabItem({ tab, onClose }: TabItemProps) {
             >
               复制链接
             </button>
+            {onUnassign && (
+              <button
+                className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50"
+                onClick={() => {
+                  onUnassign(tab.id)
+                  setShowMenu(false)
+                }}
+              >
+                取消分组
+              </button>
+            )}
             <button
               className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 text-red-600"
               onClick={(e) => {

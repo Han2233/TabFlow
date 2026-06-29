@@ -11,6 +11,7 @@ function toTabInfo(tab: chrome.tabs.Tab): TabInfo {
     pinned: tab.pinned,
     index: tab.index,
     discarded: tab.discarded || false,
+    groupId: tab.groupId ?? undefined,
   }
 }
 
