@@ -4,6 +4,8 @@ import { useGroupStore } from '../store/groupStore'
 import { WindowGroup } from '../components/WindowGroup'
 import { GroupSection } from '../components/GroupSection'
 import { GroupManager } from '../components/GroupManager'
+import { SplitWindows } from '../components/SplitWindows'
+import { TimeView } from '../components/TimeView'
 import { SnapshotManager } from '../components/SnapshotManager'
 import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
@@ -11,7 +13,7 @@ import { groupTabs } from '../utils/grouping'
 import { closeTab } from '../utils/tabs'
 import type { GroupDisplay, UngroupedDisplay } from '../types'
 
-type ViewMode = 'grouped' | 'all'
+type ViewMode = 'grouped' | 'time' | 'all'
 
 export default function SidePanel() {
   const { windows, loading, refresh } = useTabStore()
@@ -23,6 +25,7 @@ export default function SidePanel() {
   const [viewMode, setViewMode] = useState<ViewMode>('grouped')
   const [showManager, setShowManager] = useState(false)
   const [showSnapshot, setShowSnapshot] = useState(false)
+  const [showSplitWindows, setShowSplitWindows] = useState(false)
   // 加载分组数据
   useEffect(() => {
     loadGroups()
@@ -132,6 +135,10 @@ export default function SidePanel() {
     return <SnapshotManager onClose={() => setShowSnapshot(false)} />
   }
 
+  if (showSplitWindows) {
+    return <SplitWindows onClose={() => setShowSplitWindows(false)} />
+  }
+
   return (
     <div className="flex flex-col h-screen bg-white">
       {/* Header */}
@@ -210,6 +217,8 @@ export default function SidePanel() {
               </div>
             )}
           </>
+        ) : viewMode === 'time' ? (
+          <TimeView />
         ) : (
           windows.map((win, i) => (
             <WindowGroup key={win.id} window={win} index={i} />
@@ -230,6 +239,12 @@ export default function SidePanel() {
           onClick={() => setShowSnapshot(true)}
         >
           📸 工作区快照
+        </button>
+        <button
+          className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          onClick={() => setShowSplitWindows(true)}
+        >
+          🪟 一键分窗口
         </button>
       </footer>
     </div>
