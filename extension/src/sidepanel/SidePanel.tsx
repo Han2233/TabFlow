@@ -288,27 +288,27 @@ export default function SidePanel() {
       <footer className="border-t border-gray-200 px-2 py-1.5">
         <div className="flex justify-around">
           <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowManager(true)} title="管理分组">
-            <span className="text-sm">⚙️</span>
+            <span className="text-lg">⚙️</span>
             <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">分组</span>
           </button>
           <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowSnapshot(true)} title="工作区快照">
-            <span className="text-sm">��</span>
+            <span className="text-lg">💾</span>
             <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">快照</span>
           </button>
           <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowSplitWindows(true)} title="一键分窗口">
-            <span className="text-sm">🪟</span>
+            <span className="text-lg">🪟</span>
             <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">分窗</span>
           </button>
           <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowDuplicates(true)} title="重复检测">
-            <span className="text-sm">🔍</span>
+            <span className="text-lg">🔍</span>
             <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">检测</span>
           </button>
           <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowSettings(true)} title="设置">
-            <span className="text-sm">⚙️</span>
+            <span className="text-lg">⚙️</span>
             <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">设置</span>
           </button>
           <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-blue-100 transition-colors group" onClick={() => setShowAI(true)} title="AI 整理">
-            <span className="text-sm">🤖</span>
+            <span className="text-lg">🤖</span>
             <span className="text-[9px] text-blue-400 group-hover:text-blue-600 leading-none">AI整理</span>
           </button>
         </div>
