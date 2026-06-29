@@ -101,10 +101,30 @@ function matchRegex(pattern: string, url: string): boolean {
  */
 function matchRule(rule: GroupRule, tab: TabInfo): boolean {
   if (!tab.url) return false
-  const hostname = getDomain(tab.url)
 
   if (rule.type === 'domain') {
-    return matchDomain(rule.pattern, hostname)
+    // 提取规则中的 hostname 和 path
+    let patternHost = rule.pattern
+    let patternPath = ''
+    const slashIdx = rule.pattern.indexOf('/')
+    if (slashIdx > 0) {
+      patternHost = rule.pattern.substring(0, slashIdx)
+      patternPath = rule.pattern.substring(slashIdx)
+    }
+
+    const hostname = getDomain(tab.url)
+    if (!matchDomain(patternHost, hostname)) return false
+
+    // 如果规则中包含路径，检查 URL 路径是否以规则路径开头
+    if (patternPath) {
+      try {
+        const urlPath = new URL(tab.url).pathname
+        return urlPath.startsWith(patternPath)
+      } catch {
+        return false
+      }
+    }
+    return true
   }
   if (rule.type === 'regex') {
     return matchRegex(rule.pattern, tab.url)
