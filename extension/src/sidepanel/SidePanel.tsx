@@ -5,6 +5,8 @@ import { WindowGroup } from '../components/WindowGroup'
 import { GroupSection } from '../components/GroupSection'
 import { GroupManager } from '../components/GroupManager'
 import { SplitWindows } from '../components/SplitWindows'
+import { DuplicatePanel } from '../components/DuplicatePanel'
+import { Settings } from '../components/Settings'
 import { TimeView } from '../components/TimeView'
 import { SnapshotManager } from '../components/SnapshotManager'
 import { SearchBar } from '../components/SearchBar'
@@ -26,6 +28,8 @@ export default function SidePanel() {
   const [showManager, setShowManager] = useState(false)
   const [showSnapshot, setShowSnapshot] = useState(false)
   const [showSplitWindows, setShowSplitWindows] = useState(false)
+  const [showDuplicates, setShowDuplicates] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   // 加载分组数据
   useEffect(() => {
     loadGroups()
@@ -151,6 +155,14 @@ export default function SidePanel() {
     return <SplitWindows onClose={() => setShowSplitWindows(false)} />
   }
 
+  if (showDuplicates) {
+    return <DuplicatePanel onClose={() => setShowDuplicates(false)} />
+  }
+
+  if (showSettings) {
+    return <Settings onClose={() => setShowSettings(false)} />
+  }
+
   return (
     <div className="flex flex-col h-screen bg-white">
       {/* Header */}
@@ -267,6 +279,18 @@ export default function SidePanel() {
           onClick={() => setShowSplitWindows(true)}
         >
           🪟 一键分窗口
+        </button>
+        <button
+          className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          onClick={() => setShowDuplicates(true)}
+        >
+          🔍 重复检测
+        </button>
+        <button
+          className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          onClick={() => setShowSettings(true)}
+        >
+          ⚙️ 设置
         </button>
       </footer>
     </div>
