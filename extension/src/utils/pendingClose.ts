@@ -44,14 +44,14 @@ export async function softCloseTab(
 ) {
   const config = await getPendingConfig()
 
-  if (!config.enabled || config.delaySeconds === 0) {
+  if (!config.enabled || config.delayMinutes === 0) {
     // 直接关闭
     await chrome.tabs.remove(tabId)
     recordToHistory(url, title, favIconUrl)
     return
   }
 
-  const expiresAt = Date.now() + config.delaySeconds * 1000
+  const expiresAt = Date.now() + config.delayMinutes * 60 * 1000
   const timer = setTimeout(async () => {
     pendingMap.delete(tabId)
     try {
@@ -60,7 +60,7 @@ export async function softCloseTab(
       // tab 可能已经不存在了
     }
     recordToHistory(url, title, favIconUrl)
-  }, config.delaySeconds * 1000)
+  }, config.delayMinutes * 60 * 1000)
 
   pendingMap.set(tabId, { tabId, url, title, favIconUrl, windowId, expiresAt, timer })
 }

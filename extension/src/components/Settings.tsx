@@ -61,14 +61,14 @@ export function Settings({ onClose }: SettingsProps) {
           {pendingConfig.enabled && (
             <div className="space-y-2">
               <div>
-                <label className="text-xs text-gray-500">暂留时长（秒）</label>
+                <label className="text-xs text-gray-500">暂留时长（分钟）</label>
                 <input
                   type="number"
                   className="w-full mt-1 px-2 py-1 text-sm border border-gray-200 rounded"
-                  value={pendingConfig.delaySeconds}
+                  value={pendingConfig.delayMinutes}
                   min={5}
-                  max={120}
-                  onChange={(e) => savePending({ delaySeconds: parseInt(e.target.value) || 30 })}
+                  max={60}
+                  onChange={(e) => savePending({ delayMinutes: parseInt(e.target.value) || 5 })}
                 />
               </div>
               <div>
@@ -115,7 +115,7 @@ export function Settings({ onClose }: SettingsProps) {
                 className="w-full mt-1 px-2 py-1 text-sm border border-gray-200 rounded"
                 value={config.timeoutMinutes}
                 min={5}
-                max={120}
+                max={60}
                 onChange={(e) => save({ timeoutMinutes: parseInt(e.target.value) || 30 })}
               />
             </div>

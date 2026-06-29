@@ -27,15 +27,15 @@ const STORAGE_PENDING_CONFIG = 'tabflow_pending_config'
 
 export interface PendingConfig {
   enabled: boolean
-  /** 灰色暂留时长（秒），默认 30 */
-  delaySeconds: number
+  /** 灰色暂留时长（分钟），默认 5 */
+  delayMinutes: number
   /** 关闭历史保留天数，默认 7 */
   historyDays: number
 }
 
 export const DEFAULT_PENDING_CONFIG: PendingConfig = {
   enabled: true,
-  delaySeconds: 30,
+  delayMinutes: 5,
   historyDays: 7,
 }
 
