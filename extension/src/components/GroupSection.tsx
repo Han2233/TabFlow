@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import type { GroupConfig, TabInfo } from '../types'
 import { TabItem } from './TabItem'
 import { closeTab } from '../utils/tabs'
+import { buildSplitGroups, splitToNewWindows } from '../utils/windowSplit'
 import { useTabStore } from '../store/tabStore'
 import { useGroupStore } from '../store/groupStore'
 
@@ -58,6 +59,13 @@ export function GroupSection({ config, tabs, onAssignTab, onUnassignTab }: Group
     [tabs, refresh],
   )
 
+  const handleSplitSingle = useCallback(async () => {
+    if (tabs.length === 0) return
+    const urls = tabs.map((t) => t.url).filter(Boolean)
+    if (urls.length === 0) return
+    await chrome.windows.create({ url: urls, focused: false, type: 'normal' })
+  }, [tabs])
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
@@ -82,6 +90,13 @@ export function GroupSection({ config, tabs, onAssignTab, onUnassignTab }: Group
         <span className="text-xs">{collapsed ? '▶' : '▼'}</span>
         <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors.dot}`} />
         <span className="text-sm font-medium text-gray-800">{config.name}</span>
+        <button
+          className="text-xs px-1.5 py-0.5 rounded hover:bg-black/10 transition-colors flex-shrink-0"
+          onClick={(e) => { e.stopPropagation(); handleSplitSingle() }}
+          title="单独分窗"
+        >
+          🪟
+        </button>
         <span className="text-xs text-gray-500 ml-auto">{tabs.length}</span>
         {config.note && (
           <span className="text-xs text-gray-400 truncate max-w-[100px]" title={config.note}>
