@@ -307,6 +307,10 @@ export default function SidePanel() {
             <span className="text-sm">⚙️</span>
             <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">设置</span>
           </button>
+          <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-blue-100 transition-colors group" onClick={() => setShowAI(true)} title="AI 整理">
+            <span className="text-sm">🤖</span>
+            <span className="text-[9px] text-blue-400 group-hover:text-blue-600 leading-none">AI整理</span>
+          </button>
         </div>
       </footer>
     </div>
