@@ -1,13 +1,14 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useTabStore } from '../store/tabStore'
 import { useGroupStore } from '../store/groupStore'
 import { WindowGroup } from '../components/WindowGroup'
 import { GroupSection } from '../components/GroupSection'
 import { GroupManager } from '../components/GroupManager'
+import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
 import { groupTabs } from '../utils/grouping'
 import { closeTab } from '../utils/tabs'
-import type { GroupDisplay, TabInfo, UngroupedDisplay } from '../types'
+import type { GroupDisplay, UngroupedDisplay } from '../types'
 
 type ViewMode = 'grouped' | 'all'
 
@@ -20,6 +21,7 @@ export default function SidePanel() {
 
   const [viewMode, setViewMode] = useState<ViewMode>('grouped')
   const [showManager, setShowManager] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   // 加载分组数据
   useEffect(() => {
@@ -54,6 +56,20 @@ export default function SidePanel() {
     }
   }, [refresh])
 
+  // 监听来自 background 的消息（快捷键触发搜索框聚焦）
+  useEffect(() => {
+    const handleMessage = (message: { action: string }) => {
+      if (message.action === 'focusSearch') {
+        // 聚焦搜索框——SearchBar 暴露 ref 聚焦
+        searchInputRef.current?.focus()
+      }
+    }
+    chrome.runtime.onMessage.addListener(handleMessage)
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage)
+    }
+  }, [])
+
   // 所有标签页的扁平列表
   const allTabs = useMemo(
     () => windows.flatMap((w) => w.tabs),
@@ -68,9 +84,19 @@ export default function SidePanel() {
     return groupTabs(allTabs, groups, manualAssignments)
   }, [allTabs, groups, manualAssignments, groupsLoaded])
 
+  // tabId → 分组名称映射
+  const groupNameMap = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const g of grouped) {
+      for (const tab of g.tabs) {
+        map.set(tab.id, g.config.name)
+      }
+    }
+    return map
+  }, [grouped])
+
   const totalTabs = windows.reduce((sum, w) => sum + w.tabs.length, 0)
 
-  // 处理拖拽分配
   const handleAssignTab = useCallback(
     (tabId: number, groupId: string | null) => {
       assignTab(tabId, groupId)
@@ -78,7 +104,6 @@ export default function SidePanel() {
     [assignTab],
   )
 
-  // 处理取消分组（从右键菜单）
   const handleUnassignTab = useCallback(
     (tabId: number) => {
       assignTab(tabId, null)
@@ -86,7 +111,6 @@ export default function SidePanel() {
     [assignTab],
   )
 
-  // 未分组区域的拖放处理
   const handleUngroupedDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
@@ -98,7 +122,6 @@ export default function SidePanel() {
     [assignTab],
   )
 
-  // 关闭标签页回调
   const handleCloseTab = useCallback(
     async (tabId: number) => {
       await closeTab(tabId)
@@ -115,7 +138,6 @@ export default function SidePanel() {
     )
   }
 
-  // 分组管理页面
   if (showManager) {
     return <GroupManager onClose={() => setShowManager(false)} />
   }
@@ -129,6 +151,11 @@ export default function SidePanel() {
           {windows.length} 个窗口 · {totalTabs} 个标签页
         </span>
       </header>
+
+      {/* 搜索栏 */}
+      <div className="px-3 py-2 border-b border-gray-100">
+        <SearchBar allTabs={allTabs} groupNameMap={groupNameMap} />
+      </div>
 
       {/* View Tabs */}
       <div className="flex border-b border-gray-200">
@@ -157,9 +184,7 @@ export default function SidePanel() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-3">
         {viewMode === 'grouped' ? (
-          /* 分组视图 */
           <>
-            {/* 已分组 */}
             {grouped.map((g) => (
               <GroupSection
                 key={g.config.id}
@@ -170,7 +195,6 @@ export default function SidePanel() {
               />
             ))}
 
-            {/* 未分组区域 */}
             {ungrouped.tabs.length > 0 && (
               <div
                 className="mb-2 rounded-lg border border-dashed border-gray-300 bg-gray-50/50"
@@ -197,7 +221,6 @@ export default function SidePanel() {
             )}
           </>
         ) : (
-          /* 全部视图（按窗口） */
           windows.map((win, i) => (
             <WindowGroup key={win.id} window={win} index={i} />
           ))
@@ -212,9 +235,6 @@ export default function SidePanel() {
         >
           ⚙️ 管理分组
         </button>
-        <div className="text-center text-xs text-gray-400">
-          拖拽标签页到分组即可归类
-        </div>
       </footer>
     </div>
   )
