@@ -8,14 +8,15 @@ import { SplitWindows } from '../components/SplitWindows'
 import { DuplicatePanel } from '../components/DuplicatePanel'
 import { Settings } from '../components/Settings'
 import { TimeView } from '../components/TimeView'
+import { HistoryView } from '../components/HistoryView'
 import { SnapshotManager } from '../components/SnapshotManager'
 import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
 import { groupTabs } from '../utils/grouping'
-import { closeTab } from '../utils/tabs'
+import { softCloseTab, getPendingCloseIds } from '../utils/pendingClose'
 import type { GroupDisplay, TabInfo, UngroupedDisplay } from '../types'
 
-type ViewMode = 'grouped' | 'time' | 'all'
+type ViewMode = 'grouped' | 'time' | 'history' | 'all'
 
 export default function SidePanel() {
   const { windows, loading, refresh } = useTabStore()
@@ -30,6 +31,7 @@ export default function SidePanel() {
   const [showSplitWindows, setShowSplitWindows] = useState(false)
   const [showDuplicates, setShowDuplicates] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   // 加载分组数据
   useEffect(() => {
     loadGroups()
@@ -100,6 +102,15 @@ export default function SidePanel() {
     return map
   }, [allGroupDisplays])
 
+  // 软关闭中的标签页 ID
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    const update = () => setPendingIds(getPendingCloseIds())
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
   const totalTabs = windows.reduce((sum, w) => sum + w.tabs.length, 0)
 
   const handleAssignTab = useCallback(
@@ -129,10 +140,13 @@ export default function SidePanel() {
 
   const handleCloseTab = useCallback(
     async (tabId: number) => {
-      await closeTab(tabId)
-      await refresh()
+      const tab = allTabs.find((t) => t.id === tabId)
+      if (tab) {
+        await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
+        await refresh()
+      }
     },
-    [refresh],
+    [allTabs, refresh],
   )
 
   if (loading || !groupsLoaded) {
@@ -161,6 +175,10 @@ export default function SidePanel() {
 
   if (showSettings) {
     return <Settings onClose={() => setShowSettings(false)} />
+  }
+
+  if (showHistory) {
+    return <HistoryView onClose={() => setShowHistory(false)} />
   }
 
   return (
@@ -223,6 +241,7 @@ export default function SidePanel() {
                 tabs={g.tabs}
                 onAssignTab={handleAssignTab}
                 onUnassignTab={handleUnassignTab}
+                pendingIds={pendingIds}
               />
             ))}
 
@@ -239,7 +258,7 @@ export default function SidePanel() {
                 </div>
                 <div className="pb-1">
                   {ungrouped.tabs.map((tab) => (
-                    <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} />
+                    <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} isClosing={pendingIds.has(tab.id)} />
                   ))}
                 </div>
               </div>
@@ -253,6 +272,8 @@ export default function SidePanel() {
           </>
         ) : viewMode === 'time' ? (
           <TimeView />
+        ) : viewMode === 'history' ? (
+          <HistoryView onClose={() => setViewMode('grouped')} />
         ) : (
           windows.map((win, i) => (
             <WindowGroup key={win.id} window={win} index={i} />
@@ -261,47 +282,27 @@ export default function SidePanel() {
       </main>
 
       {/* Bottom Actions */}
-      <footer className="border-t border-gray-200 px-3 py-2">
+      <footer className="border-t border-gray-200 px-2 py-1.5">
         <div className="flex justify-around">
-          <button
-            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
-            onClick={() => setShowManager(true)}
-            title="管理分组"
-          >
-            <span className="text-base">⚙️</span>
-            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">分组</span>
+          <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowManager(true)} title="管理分组">
+            <span className="text-sm">⚙️</span>
+            <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">分组</span>
           </button>
-          <button
-            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
-            onClick={() => setShowSnapshot(true)}
-            title="工作区快照"
-          >
-            <span className="text-base">📸</span>
-            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">快照</span>
+          <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowSnapshot(true)} title="工作区快照">
+            <span className="text-sm">��</span>
+            <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">快照</span>
           </button>
-          <button
-            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
-            onClick={() => setShowSplitWindows(true)}
-            title="一键分窗口"
-          >
-            <span className="text-base">🪟</span>
-            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">分窗</span>
+          <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowSplitWindows(true)} title="一键分窗口">
+            <span className="text-sm">🪟</span>
+            <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">分窗</span>
           </button>
-          <button
-            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
-            onClick={() => setShowDuplicates(true)}
-            title="重复检测"
-          >
-            <span className="text-base">🔍</span>
-            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">检测</span>
+          <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowDuplicates(true)} title="重复检测">
+            <span className="text-sm">🔍</span>
+            <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">检测</span>
           </button>
-          <button
-            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
-            onClick={() => setShowSettings(true)}
-            title="设置"
-          >
-            <span className="text-base">⚙️</span>
-            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">设置</span>
+          <button className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-md hover:bg-gray-100 transition-colors group" onClick={() => setShowSettings(true)} title="设置">
+            <span className="text-sm">⚙️</span>
+            <span className="text-[9px] text-gray-400 group-hover:text-gray-600 leading-none">设置</span>
           </button>
         </div>
       </footer>

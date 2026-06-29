@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getHibernateConfig, saveHibernateConfig, type HibernateConfig, DEFAULT_HIBERNATE_CONFIG } from '../utils/duplicateDetector'
+import { getPendingConfig, savePendingConfig, type PendingConfig, DEFAULT_PENDING_CONFIG } from '../store/closeHistoryStore'
 
 interface SettingsProps {
   onClose: () => void
@@ -7,11 +8,19 @@ interface SettingsProps {
 
 export function Settings({ onClose }: SettingsProps) {
   const [config, setConfig] = useState<HibernateConfig>(DEFAULT_HIBERNATE_CONFIG)
+  const [pendingConfig, setPendingConfig] = useState<PendingConfig>(DEFAULT_PENDING_CONFIG)
   const [newDomain, setNewDomain] = useState('')
 
   useEffect(() => {
     getHibernateConfig().then(setConfig)
+    getPendingConfig().then(setPendingConfig)
   }, [])
+
+  const savePending = async (updates: Partial<PendingConfig>) => {
+    const next = { ...pendingConfig, ...updates }
+    setPendingConfig(next)
+    await savePendingConfig(next)
+  }
 
   const save = async (updates: Partial<HibernateConfig>) => {
     const next = { ...config, ...updates }
@@ -29,6 +38,54 @@ export function Settings({ onClose }: SettingsProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
+        {/* 软关闭（灰色暂留） */}
+        <div className="border border-gray-200 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">关闭后暂留</span>
+            <button
+              className={`w-10 h-5 rounded-full transition-colors ${
+                pendingConfig.enabled ? 'bg-blue-500' : 'bg-gray-300'
+              }`}
+              onClick={() => savePending({ enabled: !pendingConfig.enabled })}
+            >
+              <span
+                className={`block w-4 h-4 mt-0.5 rounded-full bg-white shadow transition-transform ${
+                  pendingConfig.enabled ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mb-2">
+            关闭标签页后先变灰暂留，超时后再真正关闭，期间可点击撤销
+          </p>
+          {pendingConfig.enabled && (
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-gray-500">暂留时长（秒）</label>
+                <input
+                  type="number"
+                  className="w-full mt-1 px-2 py-1 text-sm border border-gray-200 rounded"
+                  value={pendingConfig.delaySeconds}
+                  min={5}
+                  max={120}
+                  onChange={(e) => savePending({ delaySeconds: parseInt(e.target.value) || 30 })}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">关闭历史保留（天）</label>
+                <input
+                  type="number"
+                  className="w-full mt-1 px-2 py-1 text-sm border border-gray-200 rounded"
+                  value={pendingConfig.historyDays}
+                  min={1}
+                  max={90}
+                  onChange={(e) => savePending({ historyDays: parseInt(e.target.value) || 7 })}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* 休眠开关 */}
         <div className="border border-gray-200 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">

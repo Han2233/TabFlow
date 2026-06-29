@@ -3,6 +3,7 @@ import type { TabInfo } from '../types'
 import { getTabCreatedMap } from '../utils/windowSplit'
 import { TabItem } from './TabItem'
 import { closeTab, closeTabs } from '../utils/tabs'
+import { getPendingCloseIds, softCloseTab } from '../utils/pendingClose'
 import { useTabStore } from '../store/tabStore'
 
 interface TimeGroup {
@@ -74,6 +75,14 @@ export function TimeView() {
     getTabCreatedMap().then(setCreatedMap)
   }
 
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    const update = () => setPendingIds(getPendingCloseIds())
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
   const handleCloseGroup = async (tabs: TabInfo[]) => {
     if (!confirm(`确定关闭这 ${tabs.length} 个标签页吗？`)) return
     const ids = tabs.map((t) => t.id)
@@ -108,7 +117,7 @@ export function TimeView() {
           </div>
           <div className="pb-1">
             {group.tabs.map((tab) => (
-              <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} />
+              <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} isClosing={pendingIds.has(tab.id)} />
             ))}
           </div>
         </div>
