@@ -1,16 +1,19 @@
+// 点击扩展图标 → 打开侧边栏（当没有 popup 时生效）
 chrome.action.onClicked.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+  chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT })
 })
-
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
 // 监听快捷键命令
 chrome.commands.onCommand.addListener((command) => {
+  if (command === 'open_side_panel') {
+    // 打开侧边栏
+    chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT })
+  }
+
   if (command === 'search_tabs') {
     // 打开侧边栏并通知聚焦搜索框
     chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT })
       .then(() => {
-        // 延迟发送消息，确保侧边栏已加载
         setTimeout(() => {
           chrome.runtime.sendMessage({ action: 'focusSearch' })
         }, 300)
@@ -21,8 +24,3 @@ chrome.commands.onCommand.addListener((command) => {
       })
   }
 })
-chrome.action.onClicked.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
-})
-
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })

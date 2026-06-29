@@ -22,7 +22,7 @@
     "default_popup": "src/popup/index.html"
   },
   "commands": {
-    "_execute_action": {
+    "open_side_panel": {
       "suggested_key": {
         "default": "Ctrl+Shift+G",
         "mac": "Command+Shift+G"
