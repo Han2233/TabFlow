@@ -7,11 +7,9 @@ import { useTabStore } from '../store/tabStore'
 interface WindowGroupProps {
   window: WindowInfo
   index: number
-  pendingIds?: Set<number>
-  onUndoClose?: (tabId: number) => void
 }
 
-export function WindowGroup({ window: win, index, pendingIds, onUndoClose }: WindowGroupProps) {
+export function WindowGroup({ window: win, index }: WindowGroupProps) {
   const [collapsed, setCollapsed] = useState(false)
   const refresh = useTabStore((s) => s.refresh)
 
@@ -45,7 +43,7 @@ export function WindowGroup({ window: win, index, pendingIds, onUndoClose }: Win
       {!collapsed && (
         <div className="mt-1 ml-1">
           {win.tabs.map((tab) => (
-            <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} isClosing={pendingIds?.has(tab.id)} onUndo={onUndoClose} />
+            <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} />
           ))}
         </div>
       )}

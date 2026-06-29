@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useTabStore } from '../store/tabStore'
 import { useGroupStore } from '../store/groupStore'
 import { WindowGroup } from '../components/WindowGroup'
@@ -14,7 +14,6 @@ import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
 import { groupTabs } from '../utils/grouping'
 import { closeTab } from '../utils/tabs'
-import { getPendingConfig } from '../store/closeHistoryStore'
 import type { GroupDisplay, TabInfo, UngroupedDisplay } from '../types'
 
 type ViewMode = 'grouped' | 'time' | 'history' | 'all'
@@ -33,8 +32,6 @@ export default function SidePanel() {
   const [showDuplicates, setShowDuplicates] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
-  const pendingTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
   // 加载分组数据
   useEffect(() => {
     loadGroups()
@@ -132,45 +129,13 @@ export default function SidePanel() {
     [assignTab],
   )
 
-  // 软关闭：先变灰暂留，超时后再真正关闭
   const handleCloseTab = useCallback(
     async (tabId: number) => {
-      const config = await getPendingConfig()
-      if (!config.enabled || config.delayMinutes <= 0) {
-        await closeTab(tabId)
-        await refresh()
-        return
-      }
-      // 加入暂留状态
-      setPendingIds((prev) => new Set(prev).add(tabId))
-      const timer = setTimeout(async () => {
-        await closeTab(tabId)
-        setPendingIds((prev) => {
-          const next = new Set(prev)
-          next.delete(tabId)
-          return next
-        })
-        pendingTimers.current.delete(tabId)
-        refresh()
-      }, config.delayMinutes * 60 * 1000)
-      pendingTimers.current.set(tabId, timer)
+      await closeTab(tabId)
+      await refresh()
     },
     [refresh],
   )
-
-  // 撤销软关闭
-  const handleUndoClose = useCallback((tabId: number) => {
-    const timer = pendingTimers.current.get(tabId)
-    if (timer) {
-      clearTimeout(timer)
-      pendingTimers.current.delete(tabId)
-    }
-    setPendingIds((prev) => {
-      const next = new Set(prev)
-      next.delete(tabId)
-      return next
-    })
-  }, [])
 
   if (loading || !groupsLoaded) {
     return (
@@ -274,8 +239,6 @@ export default function SidePanel() {
                 tabs={g.tabs}
                 onAssignTab={handleAssignTab}
                 onUnassignTab={handleUnassignTab}
-                pendingIds={pendingIds}
-                onUndoClose={handleUndoClose}
               />
             ))}
 
@@ -292,7 +255,7 @@ export default function SidePanel() {
                 </div>
                 <div className="pb-1">
                   {ungrouped.tabs.map((tab) => (
-                    <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} isClosing={pendingIds.has(tab.id)} onUndo={handleUndoClose} />
+                    <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} />
                   ))}
                 </div>
               </div>
@@ -310,7 +273,7 @@ export default function SidePanel() {
           <HistoryView onClose={() => setViewMode('grouped')} />
         ) : (
           windows.map((win, i) => (
-            <WindowGroup key={win.id} window={win} index={i} pendingIds={pendingIds} onUndoClose={handleUndoClose} />
+            <WindowGroup key={win.id} window={win} index={i} />
           ))
         )}
       </main>

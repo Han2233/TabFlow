@@ -10,8 +10,6 @@ interface GroupSectionProps {
   tabs: TabInfo[]
   onAssignTab: (tabId: number, groupId: string | null) => void
   onUnassignTab: (tabId: number) => void
-  pendingIds?: Set<number>
-  onUndoClose?: (tabId: number) => void
 }
 
 const COLOR_CLASSES: Record<string, { bg: string; header: string; dot: string }> = {
@@ -26,7 +24,7 @@ const COLOR_CLASSES: Record<string, { bg: string; header: string; dot: string }>
   orange:  { bg: 'bg-orange-50', header: 'bg-orange-100', dot: 'bg-orange-500' },
 }
 
-export function GroupSection({ config, tabs, onAssignTab, onUnassignTab, pendingIds, onUndoClose }: GroupSectionProps) {
+export function GroupSection({ config, tabs, onAssignTab, onUnassignTab }: GroupSectionProps) {
   const [collapsed, setCollapsed] = useState(config.collapsed)
   const refresh = useTabStore((s) => s.refresh)
   const toggleCollapseStore = useGroupStore((s) => s.toggleCollapse)
@@ -84,7 +82,7 @@ export function GroupSection({ config, tabs, onAssignTab, onUnassignTab, pending
       {!collapsed && (
         <div className="py-1 rounded-b-lg">
           {tabs.map((tab) => (
-            <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} onUnassign={onUnassignTab} isClosing={pendingIds?.has(tab.id)} onUndo={onUndoClose} />
+            <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} onUnassign={onUnassignTab} />
           ))}
           {tabs.length === 0 && (
             <div className="px-3 py-2 text-xs text-gray-400">

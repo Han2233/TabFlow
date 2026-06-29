@@ -6,28 +6,19 @@ interface TabItemProps {
   tab: TabInfo
   onClose: (tabId: number) => void
   onUnassign?: (tabId: number) => void
-  isClosing?: boolean
-  onUndo?: (tabId: number) => void
 }
 
-export function TabItem({ tab, onClose, onUnassign, isClosing, onUndo }: TabItemProps) {
+export function TabItem({ tab, onClose, onUnassign }: TabItemProps) {
   const [showMenu, setShowMenu] = useState(false)
 
   const handleClick = useCallback(() => {
-    if (isClosing && onUndo) {
-      onUndo(tab.id)
-      return
-    }
-    if (!isClosing) {
-      activateTab(tab.id, tab.windowId)
-    }
-  }, [tab.id, tab.windowId, isClosing, onUndo])
+    activateTab(tab.id, tab.windowId)
+  }, [tab.id, tab.windowId])
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    if (isClosing) return
     e.preventDefault()
     setShowMenu(true)
-  }, [isClosing])
+  }, [])
 
   const handleCloseTab = useCallback(
     (e: React.MouseEvent) => {
@@ -49,18 +40,14 @@ export function TabItem({ tab, onClose, onUnassign, isClosing, onUndo }: TabItem
   return (
     <div className="relative">
       <div
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-md group
-          ${isClosing
-            ? 'bg-gray-100 text-gray-400 cursor-pointer line-through opacity-60 hover:bg-blue-50 hover:text-blue-600 hover:opacity-80 hover:no-underline'
-            : `cursor-pointer ${tab.active ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}`
-          }
-          ${tab.discarded && !isClosing ? 'opacity-50' : ''}`}
+        className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer rounded-md group
+          ${tab.active ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}
+          ${tab.discarded ? 'opacity-50' : ''}`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        title={isClosing ? '点击撤销关闭' : `${tab.title}\n${tab.url}`}
-        draggable={!isClosing}
+        title={`${tab.title}\n${tab.url}`}
+        draggable
         onDragStart={(e) => {
-          if (isClosing) { e.preventDefault(); return }
           e.dataTransfer.setData('tabId', String(tab.id))
           e.dataTransfer.effectAllowed = 'move'
         }}
@@ -74,24 +61,18 @@ export function TabItem({ tab, onClose, onUnassign, isClosing, onUndo }: TabItem
               'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="%23ddd"/></svg>'
           }}
         />
-        <span className="text-sm truncate flex-1">
-          {isClosing ? '⏳ ' : ''}{tab.title || 'Untitled'}
-        </span>
+        <span className="text-sm truncate flex-1">{tab.title || 'Untitled'}</span>
         {tab.pinned && <span className="text-xs text-gray-400">📌</span>}
-        {isClosing ? (
-          <span className="text-xs text-blue-400 flex-shrink-0">撤销</span>
-        ) : (
-          <button
-            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 flex-shrink-0 text-xs"
-            onClick={handleCloseTab}
-            title="关闭标签页"
-          >
-            ✕
-          </button>
-        )}
+        <button
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 flex-shrink-0 text-xs"
+          onClick={handleCloseTab}
+          title="关闭标签页"
+        >
+          ✕
+        </button>
       </div>
 
-      {showMenu && !isClosing && (
+      {showMenu && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
           <div className="absolute right-0 top-full z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px]">
