@@ -31,6 +31,7 @@ export function SnapshotManager({ onClose }: SnapshotManagerProps) {
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
   const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => {
     load()
@@ -42,12 +43,16 @@ export function SnapshotManager({ onClose }: SnapshotManagerProps) {
     await createSnapshot(saveName.trim(), groups)
     setSaveName('')
     setSaving(false)
+    setSuccessMsg('✅ 快照已保存')
+    setTimeout(() => setSuccessMsg(''), 1500)
   }
 
   const handleRestoreNew = async (id: string) => {
     setRestoringId(id)
     await restoreInNewWindow(id)
     setRestoringId(null)
+    setSuccessMsg('✅ 已在浏览器新窗口中恢复')
+    setTimeout(() => onClose(), 1200)
   }
 
   const handleRestoreReplace = async (id: string) => {
@@ -55,6 +60,8 @@ export function SnapshotManager({ onClose }: SnapshotManagerProps) {
     setRestoringId(id)
     await restoreReplaceCurrent(id)
     setRestoringId(null)
+    setSuccessMsg('✅ 快照已恢复到当前窗口')
+    setTimeout(() => onClose(), 1200)
   }
 
   return (
@@ -69,6 +76,13 @@ export function SnapshotManager({ onClose }: SnapshotManagerProps) {
           返回 ✕
         </button>
       </div>
+
+      {/* 成功提示 */}
+      {successMsg && (
+        <div className="mx-4 mt-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 text-center">
+          {successMsg}
+        </div>
+      )}
 
       {/* Save Section */}
       <div className="px-4 py-3 border-b border-gray-100">
