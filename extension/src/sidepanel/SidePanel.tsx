@@ -9,6 +9,7 @@ import { DuplicatePanel } from '../components/DuplicatePanel'
 import { Settings } from '../components/Settings'
 import { TimeView } from '../components/TimeView'
 import { HistoryView } from '../components/HistoryView'
+import { AIClassify } from '../components/AIClassify'
 import { SnapshotManager } from '../components/SnapshotManager'
 import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
@@ -32,6 +33,7 @@ export default function SidePanel() {
   const [showDuplicates, setShowDuplicates] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showAI, setShowAI] = useState(false)
   // 加载分组数据
   useEffect(() => {
     loadGroups()
@@ -167,6 +169,10 @@ export default function SidePanel() {
 
   if (showHistory) {
     return <HistoryView onClose={() => setShowHistory(false)} />
+  }
+
+  if (showAI) {
+    return <AIClassify onClose={() => setShowAI(false)} />
   }
 
   return (
