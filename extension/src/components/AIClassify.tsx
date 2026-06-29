@@ -24,7 +24,7 @@ export function AIClassify({ onClose }: AIClassifyProps) {
   const { windows, refresh } = useTabStore()
   const { groups, addGroup, assignTab } = useGroupStore()
 
-  const [config, setConfig] = useState<AIConfig>({ apiKey: '', apiBase: 'https://api.openai.com/v1', model: 'gpt-4o-mini' })
+  const [config, setConfig] = useState<AIConfig>({ apiKey: '', apiBase: 'https://api.deepseek.com', model: 'deepseek-v4-flash' })
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<AIGroup[] | null>(null)
   const [applying, setApplying] = useState(false)
