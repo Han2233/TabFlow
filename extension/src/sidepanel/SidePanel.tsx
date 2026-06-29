@@ -11,7 +11,7 @@ import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
 import { groupTabs } from '../utils/grouping'
 import { closeTab } from '../utils/tabs'
-import type { GroupDisplay, UngroupedDisplay } from '../types'
+import type { GroupDisplay, TabInfo, UngroupedDisplay } from '../types'
 
 type ViewMode = 'grouped' | 'time' | 'all'
 
@@ -73,16 +73,28 @@ export default function SidePanel() {
     return groupTabs(allTabs, groups, manualAssignments)
   }, [allTabs, groups, manualAssignments, groupsLoaded])
 
+  // 所有分组（包括空的），确保分组视图始终展示所有分组
+  const allGroupDisplays: GroupDisplay[] = useMemo(() => {
+    const tabMap = new Map<string, TabInfo[]>()
+    for (const g of grouped) {
+      tabMap.set(g.config.id, g.tabs)
+    }
+    return groups.map((config) => ({
+      config,
+      tabs: tabMap.get(config.id) || [],
+    }))
+  }, [groups, grouped])
+
   // tabId → 分组名称映射
   const groupNameMap = useMemo(() => {
     const map = new Map<number, string>()
-    for (const g of grouped) {
+    for (const g of allGroupDisplays) {
       for (const tab of g.tabs) {
         map.set(tab.id, g.config.name)
       }
     }
     return map
-  }, [grouped])
+  }, [allGroupDisplays])
 
   const totalTabs = windows.reduce((sum, w) => sum + w.tabs.length, 0)
 
@@ -192,7 +204,7 @@ export default function SidePanel() {
       <main className="flex-1 overflow-y-auto p-3">
         {viewMode === 'grouped' ? (
           <>
-            {grouped.map((g) => (
+            {allGroupDisplays.map((g) => (
               <GroupSection
                 key={g.config.id}
                 config={g.config}
