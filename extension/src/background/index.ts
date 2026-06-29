@@ -4,62 +4,62 @@ import { detectDuplicates } from '../utils/duplicateDetector'
 import { getAllWindows } from '../utils/tabs'
 import { getPendingConfig, DEFAULT_PENDING_CONFIG } from '../store/closeHistoryStore'
 
-// ====== 标签页信息追踪（用于 onRemoved 时记录关闭历史） ======
+// ====== 标签页追踪（持久化到 storage，Service Worker 重启不丢失） ======
 
-interface TrackedTab {
-  url: string
-  title: string
-  favIconUrl?: string
-}
+const TAB_PREFIX = 'tab_track_'
+const HISTORY_KEY = 'tabflow_close_history'
 
-const tabInfoMap = new Map<number, TrackedTab>()
-
-function trackTab(tabId: number, url: string, title: string, favIconUrl?: string) {
-  if (url && !url.startsWith('chrome://')) {
-    tabInfoMap.set(tabId, { url, title, favIconUrl })
-  }
+async function trackTab(tabId: number, url: string, title: string, favIconUrl?: string) {
+  if (!url || url.startsWith('chrome://')) return
+  await chrome.storage.local.set({
+    [TAB_PREFIX + tabId]: { url, title, favIconUrl, ts: Date.now() },
+  })
 }
 
 chrome.tabs.onCreated.addListener((tab) => {
   if (tab.id) {
     recordTabCreated(tab.id)
-    trackTab(tab.id, tab.url || '', tab.title || '')
+    trackTab(tab.id, tab.url || '', tab.title || '', tab.favIconUrl)
   }
 })
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url || changeInfo.title || changeInfo.favIconUrl) {
-    trackTab(tabId, tab.url || tab.title || '', tab.title || '', tab.favIconUrl)
+    trackTab(tabId, tab.url || '', tab.title || '', tab.favIconUrl)
   }
 })
 
-// ====== 关闭历史记录 ======
+// ====== 关闭历史：onRemoved 从 storage 读取标签页信息 ======
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   cleanupTabCreated(tabId)
-  const info = tabInfoMap.get(tabId)
-  if (info) {
-    tabInfoMap.delete(tabId)
-    // 记录到关闭历史
-    const result = await chrome.storage.local.get('tabflow_close_history')
-    const history = ((result.tabflow_close_history as Array<Record<string, unknown>>) || []) as Array<{ id: string; url: string; title: string; favIconUrl?: string; closedAt: number }>
-    history.unshift({
-      id: `hist_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      url: info.url,
-      title: info.title,
-      favIconUrl: info.favIconUrl,
-      closedAt: Date.now(),
-    })
-    if (history.length > 5000) history.length = 5000
-    chrome.storage.local.set({ tabflow_close_history: history })
 
-    // 定期清理过期历史
-    const config = await getPendingConfig()
-    const cutoff = Date.now() - (config.historyDays || DEFAULT_PENDING_CONFIG.historyDays) * 86400000
-    const filtered = history.filter((h) => h.closedAt > cutoff)
-    if (filtered.length !== history.length) {
-      chrome.storage.local.set({ tabflow_close_history: filtered })
-    }
+  const key = TAB_PREFIX + tabId
+  const result = await chrome.storage.local.get(key)
+  const info = result[key] as { url: string; title: string; favIconUrl?: string } | undefined
+  chrome.storage.local.remove(key) // 清理追踪记录
+
+  if (!info) return
+
+  // 写入关闭历史
+  const stored = await chrome.storage.local.get(HISTORY_KEY)
+  const history = (stored[HISTORY_KEY] as Array<Record<string, unknown>>) || []
+  history.unshift({
+    id: `hist_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    url: info.url,
+    title: info.title,
+    favIconUrl: info.favIconUrl,
+    closedAt: Date.now(),
+  })
+  if (history.length > 5000) history.length = 5000
+  chrome.storage.local.set({ [HISTORY_KEY]: history })
+
+  // 定期清理
+  const config = await getPendingConfig()
+  const cutoff = Date.now() - (config.historyDays || DEFAULT_PENDING_CONFIG.historyDays) * 86400000
+  const filtered = history.filter((h: Record<string, unknown>) => (h.closedAt as number) > cutoff)
+  if (filtered.length !== history.length) {
+    chrome.storage.local.set({ [HISTORY_KEY]: filtered })
   }
 })
 
@@ -75,14 +75,9 @@ const lastActiveMap = new Map<number, number>()
 let hibernateTimer: ReturnType<typeof setInterval> | null = null
 let badgeTimer: ReturnType<typeof setInterval> | null = null
 
-chrome.tabs.onActivated.addListener((info) => {
-  lastActiveMap.set(info.tabId, Date.now())
-})
-
+chrome.tabs.onActivated.addListener((info) => { lastActiveMap.set(info.tabId, Date.now()) })
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === 'complete') {
-    lastActiveMap.set(tabId, Date.now())
-  }
+  if (changeInfo.status === 'complete') lastActiveMap.set(tabId, Date.now())
 })
 
 async function runHibernate() {
@@ -94,27 +89,19 @@ async function runHibernate() {
   for (const tab of tabs) {
     if (!tab.id || tab.active || tab.pinned || tab.discarded) continue
     try {
-      const hostname = new URL(tab.url || '').hostname
-      if (config.whitelist.some((d) => hostname.includes(d))) continue
+      if (config.whitelist.some((d) => new URL(tab.url || '').hostname.includes(d))) continue
     } catch { continue }
-    const lastActive = lastActiveMap.get(tab.id) || now
-    if (now - lastActive > timeout) {
+    if (now - (lastActiveMap.get(tab.id) || now) > timeout) {
       await chrome.tabs.discard(tab.id)
     }
   }
 }
 
-getHibernateConfig().then((config) => {
-  if (config.enabled) {
-    hibernateTimer = setInterval(runHibernate, 60_000)
-  }
-})
-
+getHibernateConfig().then((c) => { if (c.enabled) hibernateTimer = setInterval(runHibernate, 60_000) })
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.tabflow_hibernate_config) {
     if (hibernateTimer) clearInterval(hibernateTimer)
-    const config = changes.tabflow_hibernate_config.newValue as HibernateConfig
-    if (config?.enabled) {
+    if ((changes.tabflow_hibernate_config.newValue as HibernateConfig)?.enabled) {
       hibernateTimer = setInterval(runHibernate, 60_000)
     }
   }
@@ -123,9 +110,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // ====== 重复 Badge ======
 
 async function updateBadge() {
-  const windows = await getAllWindows()
-  const allTabs = windows.flatMap((w) => w.tabs)
-  const dups = detectDuplicates(allTabs)
+  const wins = await getAllWindows()
+  const dups = detectDuplicates(wins.flatMap((w) => w.tabs))
   const count = dups.reduce((s, g) => s + g.tabs.length - 1, 0)
   if (count > 0) {
     chrome.action.setBadgeText({ text: String(count) })
@@ -140,12 +126,3 @@ updateBadge()
 chrome.tabs.onCreated.addListener(() => updateBadge())
 chrome.tabs.onRemoved.addListener(() => updateBadge())
 chrome.tabs.onUpdated.addListener(() => updateBadge())
-
-// ====== 启动时清理旧版软关闭配置 ======
-
-chrome.storage.local.get('tabflow_pending_config').then((r) => {
-  const cfg = r.tabflow_pending_config as Record<string, unknown> | undefined
-  if (cfg && typeof cfg.delayMinutes !== 'number') {
-    chrome.storage.local.remove('tabflow_pending_config')
-  }
-})
