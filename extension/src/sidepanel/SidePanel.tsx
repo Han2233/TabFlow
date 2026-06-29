@@ -261,37 +261,49 @@ export default function SidePanel() {
       </main>
 
       {/* Bottom Actions */}
-      <footer className="border-t border-gray-200 px-3 py-2 space-y-1">
-        <button
-          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
-          onClick={() => setShowManager(true)}
-        >
-          ⚙️ 管理分组
-        </button>
-        <button
-          className='w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors'
-          onClick={() => setShowSnapshot(true)}
-        >
-          📸 工作区快照
-        </button>
-        <button
-          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
-          onClick={() => setShowSplitWindows(true)}
-        >
-          🪟 一键分窗口
-        </button>
-        <button
-          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
-          onClick={() => setShowDuplicates(true)}
-        >
-          🔍 重复检测
-        </button>
-        <button
-          className="w-full px-2 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
-          onClick={() => setShowSettings(true)}
-        >
-          ⚙️ 设置
-        </button>
+      <footer className="border-t border-gray-200 px-3 py-2">
+        <div className="flex justify-around">
+          <button
+            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
+            onClick={() => setShowManager(true)}
+            title="管理分组"
+          >
+            <span className="text-base">⚙️</span>
+            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">分组</span>
+          </button>
+          <button
+            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
+            onClick={() => setShowSnapshot(true)}
+            title="工作区快照"
+          >
+            <span className="text-base">📸</span>
+            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">快照</span>
+          </button>
+          <button
+            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
+            onClick={() => setShowSplitWindows(true)}
+            title="一键分窗口"
+          >
+            <span className="text-base">🪟</span>
+            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">分窗</span>
+          </button>
+          <button
+            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
+            onClick={() => setShowDuplicates(true)}
+            title="重复检测"
+          >
+            <span className="text-base">🔍</span>
+            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">检测</span>
+          </button>
+          <button
+            className="flex flex-col items-center gap-0.5 px-1 py-1 rounded-md hover:bg-gray-100 transition-colors group"
+            onClick={() => setShowSettings(true)}
+            title="设置"
+          >
+            <span className="text-base">⚙️</span>
+            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 leading-none">设置</span>
+          </button>
+        </div>
       </footer>
     </div>
   )
