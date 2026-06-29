@@ -98,14 +98,12 @@ export function TimeView() {
             <span className="text-sm font-medium text-gray-700">{group.label}</span>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400">{group.tabs.length} 个</span>
-              {group.label !== '今天' && (
-                <button
-                  className="text-xs text-red-400 hover:text-red-600"
-                  onClick={() => handleCloseGroup(group.tabs)}
-                >
-                  一键关闭
-                </button>
-              )}
+              <button
+                className="text-xs text-red-400 hover:text-red-600"
+                onClick={() => handleCloseGroup(group.tabs)}
+              >
+                一键关闭
+              </button>
             </div>
           </div>
           <div className="pb-1">
