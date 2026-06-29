@@ -34,3 +34,8 @@ export async function activateTab(tabId: number, windowId: number) {
 export async function closeTab(tabId: number) {
   await chrome.tabs.remove(tabId)
 }
+
+/** 批量关闭标签页 */
+export async function closeTabs(tabIds: number[]) {
+  await chrome.tabs.remove(tabIds)
+}

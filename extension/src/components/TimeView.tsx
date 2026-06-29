@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import type { TabInfo } from '../types'
 import { getTabCreatedMap } from '../utils/windowSplit'
 import { TabItem } from './TabItem'
-import { closeTab } from '../utils/tabs'
+import { closeTab, closeTabs } from '../utils/tabs'
 import { useTabStore } from '../store/tabStore'
 
 interface TimeGroup {
@@ -76,9 +76,8 @@ export function TimeView() {
 
   const handleCloseGroup = async (tabs: TabInfo[]) => {
     if (!confirm(`确定关闭这 ${tabs.length} 个标签页吗？`)) return
-    for (const tab of tabs) {
-      await closeTab(tab.id)
-    }
+    const ids = tabs.map((t) => t.id)
+    await closeTabs(ids)
     await refresh()
     getTabCreatedMap().then(setCreatedMap)
   }
