@@ -4,21 +4,7 @@ import { useGroupStore } from '../store/groupStore'
 
 const STORAGE_KEY = 'tabflow_ai_config'
 
-interface AIClassifyProps { onClose: () => void }
-
-interface AIConfig {
-  apiKey: string
-  apiBase: string
-  model: string
-}
-
-interface AIGroup {
-  name: string
-  tab_ids: number[]
-  reason: string
-}
-
-const SYSTEM_PROMPT = `你是一个浏览器标签页整理助手。用户会给你一组标签页（标题+URL），请根据标签页的**实际工作内容/项目/需求**来精细分组。
+export const DEFAULT_PROMPT = `你是一个浏览器标签页整理助手。用户会给你一组标签页（标题+URL），请根据标签页的**实际工作内容/项目/需求**来精细分组。
 
 核心要求：
 1. 必须按「项目/需求/任务」的语义维度分组，绝对不能按域名、网站名或 URL 结构分组
@@ -30,6 +16,21 @@ const SYSTEM_PROMPT = `你是一个浏览器标签页整理助手。用户会给
 
 返回纯 JSON（不含 markdown）：{"groups":[{"name":"分组名","tab_ids":[1,2],"reason":"分类依据"}]}`
 
+interface AIClassifyProps { onClose: () => void }
+
+interface AIConfig {
+  apiKey: string
+  apiBase: string
+  model: string
+  prompt: string
+}
+
+interface AIGroup {
+  name: string
+  tab_ids: number[]
+  reason: string
+}
+
 export function AIClassify({ onClose }: AIClassifyProps) {
   const { windows } = useTabStore()
   const { groups, addGroup, assignTab } = useGroupStore()
@@ -38,6 +39,7 @@ export function AIClassify({ onClose }: AIClassifyProps) {
     apiKey: '',
     apiBase: 'https://api.deepseek.com',
     model: 'deepseek-v4-flash',
+    prompt: DEFAULT_PROMPT,
   })
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<AIGroup[] | null>(null)
@@ -71,7 +73,7 @@ export function AIClassify({ onClose }: AIClassifyProps) {
         body: JSON.stringify({
           model: config.model,
           messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: config.prompt || DEFAULT_PROMPT },
             { role: 'user', content: `${existingDesc}\n\n待分类标签页:\n${tabsDesc}` },
           ],
           temperature: 0.3,

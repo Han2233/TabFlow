@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getHibernateConfig, saveHibernateConfig, type HibernateConfig, DEFAULT_HIBERNATE_CONFIG } from '../utils/duplicateDetector'
+import { DEFAULT_PROMPT } from './AIClassify'
 
 interface SettingsProps {
   onClose: () => void
@@ -8,10 +9,21 @@ interface SettingsProps {
 export function Settings({ onClose }: SettingsProps) {
   const [config, setConfig] = useState<HibernateConfig>(DEFAULT_HIBERNATE_CONFIG)
   const [newDomain, setNewDomain] = useState('')
+  const [aiPrompt, setAiPrompt] = useState(DEFAULT_PROMPT)
 
   useEffect(() => {
     getHibernateConfig().then(setConfig)
+    chrome.storage.local.get('tabflow_ai_config').then((r: any) => {
+      const cfg = r.tabflow_ai_config
+      if (cfg?.prompt) setAiPrompt(cfg.prompt)
+    })
   }, [])
+
+  const saveAIPrompt = async (prompt: string) => {
+    setAiPrompt(prompt)
+    const stored = (await chrome.storage.local.get('tabflow_ai_config')).tabflow_ai_config || {}
+    await chrome.storage.local.set({ tabflow_ai_config: { ...stored, prompt } })
+  }
 
   const save = async (updates: Partial<HibernateConfig>) => {
     const next = { ...config, ...updates }
@@ -121,6 +133,27 @@ export function Settings({ onClose }: SettingsProps) {
             )}
           </div>
         )}
+
+        {/* AI 分类 Prompt */}
+        <div className="border border-gray-200 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">AI 分类 Prompt</span>
+            <button
+              className="text-xs text-blue-500 hover:text-blue-600"
+              onClick={() => { setAiPrompt(DEFAULT_PROMPT); saveAIPrompt(DEFAULT_PROMPT) }}
+            >
+              恢复默认
+            </button>
+          </div>
+          <textarea
+            className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded resize-y font-mono"
+            rows={12}
+            value={aiPrompt}
+            onChange={(e) => { setAiPrompt(e.target.value) }}
+            onBlur={() => saveAIPrompt(aiPrompt)}
+          />
+          <p className="text-xs text-gray-400 mt-1">修改后 AI 整理将使用新的 Prompt。失去焦点时自动保存。</p>
+        </div>
       </div>
     </div>
   )
