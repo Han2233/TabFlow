@@ -40,9 +40,14 @@ export async function softCloseTab(
 ): Promise<boolean> {
   const config = await getPendingConfig()
   // 防御旧配置：旧版本用 delaySeconds，新版本用 delayMinutes
-  const delayMinutes = config.delayMinutes ?? (config as unknown as Record<string, number>).delaySeconds ?? DEFAULT_PENDING_CONFIG.delayMinutes
+  const delayMinutes = (() => {
+    const raw = config as unknown as Record<string, unknown>
+    if (typeof raw.delayMinutes === 'number' && raw.delayMinutes > 0) return raw.delayMinutes
+    if (typeof raw.delaySeconds === 'number' && raw.delaySeconds > 0) return Math.max(1, Math.round(raw.delaySeconds / 60))
+    return DEFAULT_PENDING_CONFIG.delayMinutes
+  })()
 
-  if (!config.enabled || delayMinutes <= 0) {
+  if (config.enabled === false || delayMinutes <= 0) {
     await chrome.tabs.remove(tabId)
     recordToHistory(url, title, favIconUrl)
     return false // 直接关闭，无暂留

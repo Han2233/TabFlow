@@ -290,7 +290,7 @@ export default function SidePanel() {
           <HistoryView onClose={() => setViewMode('grouped')} />
         ) : (
           windows.map((win, i) => (
-            <WindowGroup key={win.id} window={win} index={i} />
+            <WindowGroup key={win.id} window={win} index={i} pendingIds={pendingIds} />
           ))
         )}
       </main>
