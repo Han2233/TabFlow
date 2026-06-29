@@ -69,9 +69,11 @@ export function TimeView() {
   }, [allTabs, createdMap])
 
   const handleCloseTab = async (tabId: number) => {
-    await closeTab(tabId)
-    await refresh()
-    // Refresh created map
+    const tab = allTabs.find((t) => t.id === tabId)
+    if (tab) {
+      await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
+      await refresh()
+    }
     getTabCreatedMap().then(setCreatedMap)
   }
 
@@ -85,8 +87,9 @@ export function TimeView() {
 
   const handleCloseGroup = async (tabs: TabInfo[]) => {
     if (!confirm(`确定关闭这 ${tabs.length} 个标签页吗？`)) return
-    const ids = tabs.map((t) => t.id)
-    await closeTabs(ids)
+    for (const t of tabs) {
+      await softCloseTab(t.id, t.url, t.title, t.favIconUrl, t.windowId)
+    }
     await refresh()
     getTabCreatedMap().then(setCreatedMap)
   }
