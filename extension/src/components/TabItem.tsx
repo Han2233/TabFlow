@@ -1,26 +1,27 @@
 import { useState, useCallback } from 'react'
 import type { TabInfo } from '../types'
 import { activateTab } from '../utils/tabs'
-import { cancelPendingClose } from '../utils/pendingClose'
 
 interface TabItemProps {
   tab: TabInfo
   onClose: (tabId: number) => void
   onUnassign?: (tabId: number) => void
   isClosing?: boolean
+  onUndo?: (tabId: number) => void
 }
 
-export function TabItem({ tab, onClose, onUnassign, isClosing }: TabItemProps) {
+export function TabItem({ tab, onClose, onUnassign, isClosing, onUndo }: TabItemProps) {
   const [showMenu, setShowMenu] = useState(false)
 
   const handleClick = useCallback(() => {
-    if (isClosing) {
-      // 点击灰色标签页 → 撤销关闭
-      cancelPendingClose(tab.id)
+    if (isClosing && onUndo) {
+      onUndo(tab.id)
       return
     }
-    activateTab(tab.id, tab.windowId)
-  }, [tab.id, tab.windowId, isClosing])
+    if (!isClosing) {
+      activateTab(tab.id, tab.windowId)
+    }
+  }, [tab.id, tab.windowId, isClosing, onUndo])
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     if (isClosing) return
@@ -53,7 +54,7 @@ export function TabItem({ tab, onClose, onUnassign, isClosing }: TabItemProps) {
             ? 'bg-gray-100 text-gray-400 cursor-pointer line-through opacity-60 hover:bg-blue-50 hover:text-blue-600 hover:opacity-80 hover:no-underline'
             : `cursor-pointer ${tab.active ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}`
           }
-          ${tab.discarded ? 'opacity-50' : ''}`}
+          ${tab.discarded && !isClosing ? 'opacity-50' : ''}`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         title={isClosing ? '点击撤销关闭' : `${tab.title}\n${tab.url}`}
@@ -103,20 +104,14 @@ export function TabItem({ tab, onClose, onUnassign, isClosing }: TabItemProps) {
             {onUnassign && (
               <button
                 className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50"
-                onClick={() => {
-                  onUnassign(tab.id)
-                  setShowMenu(false)
-                }}
+                onClick={() => { onUnassign(tab.id); setShowMenu(false) }}
               >
                 取消分组
               </button>
             )}
             <button
               className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 text-red-600"
-              onClick={(e) => {
-                handleCloseTab(e)
-                setShowMenu(false)
-              }}
+              onClick={(e) => { handleCloseTab(e); setShowMenu(false) }}
             >
               关闭标签页
             </button>
