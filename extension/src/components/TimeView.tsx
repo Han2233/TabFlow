@@ -71,6 +71,7 @@ export function TimeView() {
   const handleCloseTab = async (tabId: number) => {
     const tab = allTabs.find((t) => t.id === tabId)
     if (tab) {
+      console.log('[TabFlow] TimeView close:', tab.title)
       await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
       await refresh()
     }

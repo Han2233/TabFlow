@@ -18,6 +18,7 @@ export function WindowGroup({ window: win, index, pendingIds }: WindowGroupProps
     async (tabId: number) => {
       const tab = win.tabs.find((t) => t.id === tabId)
       if (tab) {
+        console.log('[TabFlow] WindowGroup close:', tab.title)
         await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
         await refresh()
       }

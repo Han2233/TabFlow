@@ -1,16 +1,11 @@
 import { getPendingConfig, DEFAULT_PENDING_CONFIG } from '../store/closeHistoryStore'
 import { useCloseHistoryStore } from '../store/closeHistoryStore'
 
-/** 正在软关闭的标签页 */
 type PendingInfo = { tabId: number; url: string; title: string; favIconUrl?: string; windowId: number; expiresAt: number; timer: ReturnType<typeof setTimeout> }
 const pendingMap = new Map<number, PendingInfo>()
 
 export function getPendingCloseIds(): Set<number> {
   return new Set(pendingMap.keys())
-}
-
-export function getPendingInfo(tabId: number): PendingInfo | undefined {
-  return pendingMap.get(tabId)
 }
 
 export function cancelPendingClose(tabId: number) {
@@ -21,63 +16,46 @@ export function cancelPendingClose(tabId: number) {
   }
 }
 
-export function forceClose(tabId: number) {
-  const info = pendingMap.get(tabId)
-  if (info) {
-    clearTimeout(info.timer)
-    pendingMap.delete(tabId)
-    chrome.tabs.remove(tabId)
-  }
-}
-
 /** 软关闭一个标签页，返回是否进入了暂留模式 */
 export async function softCloseTab(
-  tabId: number,
-  url: string,
-  title: string,
-  favIconUrl: string | undefined,
-  windowId: number,
+  tabId: number, url: string, title: string,
+  favIconUrl: string | undefined, windowId: number,
 ): Promise<boolean> {
   const config = await getPendingConfig()
-  // 防御旧配置：旧版本用 delaySeconds，新版本用 delayMinutes
-  const delayMinutes = (() => {
-    const raw = config as unknown as Record<string, unknown>
-    if (typeof raw.delayMinutes === 'number' && raw.delayMinutes > 0) return raw.delayMinutes
-    if (typeof raw.delaySeconds === 'number' && raw.delaySeconds > 0) return Math.max(1, Math.round(raw.delaySeconds / 60))
-    return DEFAULT_PENDING_CONFIG.delayMinutes
-  })()
+  console.log('[TabFlow] softCloseTab called', { tabId, title, enabled: config.enabled, delayMinutes: config.delayMinutes })
 
-  if (config.enabled === false || delayMinutes <= 0) {
+  // 确保 delayMinutes 有效
+  const mins = typeof config.delayMinutes === 'number' && config.delayMinutes > 0
+    ? config.delayMinutes
+    : DEFAULT_PENDING_CONFIG.delayMinutes
+
+  if (config.enabled === false || mins <= 0) {
+    console.log('[TabFlow] softCloseTab: disabled, removing immediately')
     await chrome.tabs.remove(tabId)
     recordToHistory(url, title, favIconUrl)
-    return false // 直接关闭，无暂留
+    return false
   }
 
-  const delayMs = delayMinutes * 60 * 1000
+  // 先不关浏览器标签页，只加入 pendingMap
+  const delayMs = mins * 60 * 1000
   const expiresAt = Date.now() + delayMs
-  const timer = setTimeout(async () => {
+  const timer = setTimeout(() => {
     pendingMap.delete(tabId)
-    try {
-      await chrome.tabs.remove(tabId)
-    } catch {
-      // tab 可能已经不存在了
-    }
+    chrome.tabs.remove(tabId).catch(() => {})
     recordToHistory(url, title, favIconUrl)
   }, delayMs)
 
   pendingMap.set(tabId, { tabId, url, title, favIconUrl, windowId, expiresAt, timer })
-  return true // 进入了暂留模式
+  console.log('[TabFlow] softCloseTab: pending, expires in', mins, 'minutes, pendingMap size:', pendingMap.size)
+  return true
 }
 
 function recordToHistory(url: string, title: string, favIconUrl: string | undefined) {
-  const store = useCloseHistoryStore.getState()
-  store.addToHistory({
+  useCloseHistoryStore.getState().addToHistory({
     id: `hist_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    url,
-    title,
-    favIconUrl,
-    closedAt: Date.now(),
+    url, title, favIconUrl, closedAt: Date.now(),
   })
+  console.log('[TabFlow] recorded to history:', title)
 }
 
 export async function initCloseHistory() {
@@ -85,12 +63,4 @@ export async function initCloseHistory() {
   await store.load()
   const config = await getPendingConfig()
   await store.clearOlderThan(config.historyDays)
-}
-
-export async function softCloseTabs(
-  tabs: Array<{ id: number; url: string; title: string; favIconUrl?: string; windowId: number }>,
-) {
-  for (const t of tabs) {
-    await softCloseTab(t.id, t.url, t.title, t.favIconUrl, t.windowId)
-  }
 }

@@ -41,6 +41,7 @@ export function GroupSection({ config, tabs, onAssignTab, onUnassignTab, pending
     async (tabId: number) => {
       const tab = tabs.find((t) => t.id === tabId)
       if (tab) {
+        console.log('[TabFlow] GroupSection close:', tab.title)
         await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
         await refresh()
       }
