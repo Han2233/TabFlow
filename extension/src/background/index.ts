@@ -3,6 +3,16 @@ import { getHibernateConfig, type HibernateConfig } from '../utils/duplicateDete
 import { detectDuplicates } from '../utils/duplicateDetector'
 import { getAllWindows } from '../utils/tabs'
 
+// 启动时清理可能残留的旧版软关闭配置
+chrome.storage.local.get('tabflow_pending_config').then((r) => {
+  const cfg = r.tabflow_pending_config as Record<string, unknown> | undefined
+  if (cfg && typeof cfg.delayMinutes !== 'number') {
+    chrome.storage.local.remove('tabflow_pending_config')
+    console.log('TabFlow: migrated old pending config')
+  }
+})
+
+
 // 点击扩展图标 → 打开侧边栏
 chrome.action.onClicked.addListener(() => {
   chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT })
