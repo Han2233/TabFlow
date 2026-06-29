@@ -3,7 +3,6 @@ import type { TabInfo } from '../types'
 import { getTabCreatedMap } from '../utils/windowSplit'
 import { TabItem } from './TabItem'
 import { closeTab, closeTabs } from '../utils/tabs'
-import { getPendingCloseIds, softCloseTab } from '../utils/pendingClose'
 import { useTabStore } from '../store/tabStore'
 
 interface TimeGroup {
@@ -69,28 +68,15 @@ export function TimeView() {
   }, [allTabs, createdMap])
 
   const handleCloseTab = async (tabId: number) => {
-    const tab = allTabs.find((t) => t.id === tabId)
-    if (tab) {
-      console.log('[TabFlow] TimeView close:', tab.title)
-      await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
-      await refresh()
-    }
+    await closeTab(tabId)
+    await refresh()
     getTabCreatedMap().then(setCreatedMap)
   }
 
-  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
-  useEffect(() => {
-    const update = () => setPendingIds(getPendingCloseIds())
-    update()
-    const timer = setInterval(update, 1000)
-    return () => clearInterval(timer)
-  }, [])
-
   const handleCloseGroup = async (tabs: TabInfo[]) => {
     if (!confirm(`确定关闭这 ${tabs.length} 个标签页吗？`)) return
-    for (const t of tabs) {
-      await softCloseTab(t.id, t.url, t.title, t.favIconUrl, t.windowId)
-    }
+    const ids = tabs.map((t) => t.id)
+    await closeTabs(ids)
     await refresh()
     getTabCreatedMap().then(setCreatedMap)
   }
@@ -121,7 +107,7 @@ export function TimeView() {
           </div>
           <div className="pb-1">
             {group.tabs.map((tab) => (
-              <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} isClosing={pendingIds.has(tab.id)} />
+              <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} />
             ))}
           </div>
         </div>

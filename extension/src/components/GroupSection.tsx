@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { GroupConfig, TabInfo } from '../types'
 import { TabItem } from './TabItem'
-import { softCloseTab } from '../utils/pendingClose'
+import { closeTab } from '../utils/tabs'
 import { useTabStore } from '../store/tabStore'
 import { useGroupStore } from '../store/groupStore'
 
@@ -41,8 +41,7 @@ export function GroupSection({ config, tabs, onAssignTab, onUnassignTab, pending
     async (tabId: number) => {
       const tab = tabs.find((t) => t.id === tabId)
       if (tab) {
-        console.log('[TabFlow] GroupSection close:', tab.title)
-        await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
+        await closeTab(tab.id)
         await refresh()
       }
     },

@@ -13,7 +13,7 @@ import { SnapshotManager } from '../components/SnapshotManager'
 import { SearchBar } from '../components/SearchBar'
 import { TabItem } from '../components/TabItem'
 import { groupTabs } from '../utils/grouping'
-import { softCloseTab, getPendingCloseIds } from '../utils/pendingClose'
+import { closeTab } from '../utils/tabs'
 import type { GroupDisplay, TabInfo, UngroupedDisplay } from '../types'
 
 type ViewMode = 'grouped' | 'time' | 'history' | 'all'
@@ -102,15 +102,6 @@ export default function SidePanel() {
     return map
   }, [allGroupDisplays])
 
-  // 软关闭中的标签页 ID
-  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
-  useEffect(() => {
-    const update = () => setPendingIds(getPendingCloseIds())
-    update()
-    const timer = setInterval(update, 1000)
-    return () => clearInterval(timer)
-  }, [])
-
   const totalTabs = windows.reduce((sum, w) => sum + w.tabs.length, 0)
 
   const handleAssignTab = useCallback(
@@ -142,12 +133,7 @@ export default function SidePanel() {
     async (tabId: number) => {
       const tab = allTabs.find((t) => t.id === tabId)
       if (tab) {
-        console.log('[TabFlow] SidePanel close:', tab.title)
-        const pending = await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
-        if (pending) {
-          // 进入暂留模式，立即更新 pendingIds 显示灰色
-          setPendingIds(getPendingCloseIds())
-        }
+        await closeTab(tab.id)
         await refresh()
       }
     },
@@ -256,7 +242,6 @@ export default function SidePanel() {
                 tabs={g.tabs}
                 onAssignTab={handleAssignTab}
                 onUnassignTab={handleUnassignTab}
-                pendingIds={pendingIds}
               />
             ))}
 
@@ -273,7 +258,7 @@ export default function SidePanel() {
                 </div>
                 <div className="pb-1">
                   {ungrouped.tabs.map((tab) => (
-                    <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} isClosing={pendingIds.has(tab.id)} />
+                    <TabItem key={tab.id} tab={tab} onClose={handleCloseTab} />
                   ))}
                 </div>
               </div>
@@ -291,7 +276,7 @@ export default function SidePanel() {
           <HistoryView onClose={() => setViewMode('grouped')} />
         ) : (
           windows.map((win, i) => (
-            <WindowGroup key={win.id} window={win} index={i} pendingIds={pendingIds} />
+            <WindowGroup key={win.id} window={win} index={i} />
           ))
         )}
       </main>

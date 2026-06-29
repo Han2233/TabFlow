@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { WindowInfo } from '../types'
 import { TabItem } from './TabItem'
-import { softCloseTab } from '../utils/pendingClose'
+import { closeTab } from '../utils/tabs'
 import { useTabStore } from '../store/tabStore'
 
 interface WindowGroupProps {
@@ -18,8 +18,7 @@ export function WindowGroup({ window: win, index, pendingIds }: WindowGroupProps
     async (tabId: number) => {
       const tab = win.tabs.find((t) => t.id === tabId)
       if (tab) {
-        console.log('[TabFlow] WindowGroup close:', tab.title)
-        await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
+        await closeTab(tab.id)
         await refresh()
       }
     },

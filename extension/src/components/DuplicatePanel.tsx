@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTabStore } from '../store/tabStore'
 import { TabItem } from './TabItem'
 import { detectDuplicates, mergeDuplicates, type DuplicateGroup } from '../utils/duplicateDetector'
-import { softCloseTab } from '../utils/pendingClose'
+import { closeTab } from '../utils/tabs'
 
 interface DuplicatePanelProps {
   onClose: () => void
@@ -20,11 +20,8 @@ export function DuplicatePanel({ onClose }: DuplicatePanelProps) {
   }
 
   const handleCloseTab = async (tabId: number) => {
-    const tab = allTabs.find((t) => t.id === tabId)
-    if (tab) {
-      await softCloseTab(tab.id, tab.url, tab.title, tab.favIconUrl, tab.windowId)
-      await refresh()
-    }
+    await closeTab(tabId)
+    await refresh()
   }
 
   return (
