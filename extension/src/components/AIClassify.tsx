@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useTabStore } from '../store/tabStore'
 import { useGroupStore } from '../store/groupStore'
 
@@ -9,6 +9,7 @@ interface AIClassifyProps {
 }
 
 interface AIConfig {
+  backendUrl: string
   apiKey: string
   apiBase: string
   model: string
@@ -21,10 +22,15 @@ interface AIGroup {
 }
 
 export function AIClassify({ onClose }: AIClassifyProps) {
-  const { windows, refresh } = useTabStore()
+  const { windows } = useTabStore()
   const { groups, addGroup, assignTab } = useGroupStore()
 
-  const [config, setConfig] = useState<AIConfig>({ apiKey: '', apiBase: 'https://api.deepseek.com', model: 'deepseek-v4-flash' })
+  const [config, setConfig] = useState<AIConfig>({
+    backendUrl: 'http://localhost:8000',
+    apiKey: '',
+    apiBase: 'https://api.deepseek.com',
+    model: 'deepseek-v4-flash',
+  })
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<AIGroup[] | null>(null)
   const [applying, setApplying] = useState(false)
@@ -33,7 +39,7 @@ export function AIClassify({ onClose }: AIClassifyProps) {
   // 加载配置
   useMemo(() => {
     chrome.storage.local.get(STORAGE_KEY).then((r) => {
-      if (r[STORAGE_KEY]) setConfig(r[STORAGE_KEY] as AIConfig)
+      if (r[STORAGE_KEY]) setConfig({ ...config, ...(r[STORAGE_KEY] as AIConfig) })
     })
   }, [])
 
@@ -52,7 +58,7 @@ export function AIClassify({ onClose }: AIClassifyProps) {
 
     try {
       const tabs = allTabs.map((t) => ({ id: t.id, title: t.title, url: t.url, domain: '' }))
-      const resp = await fetch(`${config.apiBase.replace(/\/+$/, '')}/api/v1/classify`, {
+      const resp = await fetch(`${config.backendUrl.replace(/\/+$/, '')}/api/v1/classify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,11 +91,8 @@ export function AIClassify({ onClose }: AIClassifyProps) {
     if (!results) return
     setApplying(true)
     for (const g of results) {
-      // 创建新分组
       addGroup(g.name, 'blue')
-      // 延迟确保 groupStore 更新
       await new Promise((r) => setTimeout(r, 100))
-      // 分配标签页
       for (const tid of g.tab_ids) {
         assignTab(tid, groups[groups.length - 1]?.id || '')
       }
@@ -109,12 +112,23 @@ export function AIClassify({ onClose }: AIClassifyProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {/* API 配置 */}
+        {/* 后端地址 */}
         <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-          <span className="text-xs font-medium text-gray-600">LLM API 配置</span>
+          <span className="text-xs font-medium text-gray-600">后端服务</span>
           <input
             className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded"
-            placeholder="API Key (sk-...)"
+            placeholder="http://localhost:8000"
+            value={config.backendUrl}
+            onChange={(e) => saveConfig({ ...config, backendUrl: e.target.value })}
+          />
+        </div>
+
+        {/* LLM API 配置 */}
+        <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+          <span className="text-xs font-medium text-gray-600">LLM API</span>
+          <input
+            className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded"
+            placeholder="API Key"
             type="password"
             value={config.apiKey}
             onChange={(e) => saveConfig({ ...config, apiKey: e.target.value })}
@@ -133,7 +147,6 @@ export function AIClassify({ onClose }: AIClassifyProps) {
           />
         </div>
 
-        {/* 操作按钮 */}
         <button
           className="w-full px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
           onClick={handleClassify}
@@ -150,7 +163,6 @@ export function AIClassify({ onClose }: AIClassifyProps) {
           </div>
         )}
 
-        {/* AI 结果 */}
         {results && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
