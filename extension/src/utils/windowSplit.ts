@@ -7,10 +7,6 @@ export interface SplitGroup {
   tabs: TabInfo[]
 }
 
-/**
- * 将标签页按分组归类，未分组的归入"未分组"
- * 确保所有标签页都被分配到某个窗口
- */
 export function buildSplitGroups(
   tabs: TabInfo[],
   groups: GroupConfig[],
@@ -24,55 +20,58 @@ export function buildSplitGroups(
     tabs: g.tabs,
   }))
 
-  // 未分组标签页单独分在一个窗口
   if (ungrouped.tabs.length > 0) {
-    result.push({
-      name: '未分组',
-      color: 'grey',
-      tabs: ungrouped.tabs,
-    })
+    result.push({ name: '未分组', color: 'grey', tabs: ungrouped.tabs })
   }
 
   return result
 }
 
+/** 为一个分组创建独立窗口并设置 Tab Group */
 async function createWindowWithGroup(group: SplitGroup, focused: boolean) {
   if (group.tabs.length === 0) return
   const urls = group.tabs.map((t) => t.url).filter(Boolean)
   if (urls.length === 0) return
 
-  const win = await chrome.windows.create({ url: urls, focused })
-  if (!win) return
+  // 先用第一个 URL 创建窗口
+  const firstUrl = urls[0]
+  const win = await chrome.windows.create({ url: firstUrl, focused })
+  if (!win || !win.id) return
 
-  // 为窗口中的标签页创建 Chrome Tab Group
-  if (win.tabs && win.tabs.length >= 2) {
-    try {
-      const tabIds = win.tabs.map((t) => t.id!).filter(Boolean) as [number, ...number[]]
-      const groupId = await chrome.tabs.group({ tabIds })
-      await chrome.tabGroups.update(groupId, {
-        title: group.name,
-        color: toChromeColor(group.color),
-      })
-    } catch {
-      // Chrome Tab Group 可能不适用于所有情况
+  // 在窗口中逐个创建剩余标签页
+  for (let i = 1; i < urls.length; i++) {
+    await chrome.tabs.create({ windowId: win.id, url: urls[i], active: false })
+  }
+
+  // 等所有标签页创建完成后，获取窗口中的所有标签页并创建 Chrome Tab Group
+  if (urls.length >= 2) {
+    // 稍微等待确保标签页都创建好了
+    await new Promise((r) => setTimeout(r, 200))
+    const tabs = await chrome.tabs.query({ windowId: win.id })
+    if (tabs.length >= 2) {
+      try {
+        const tabIds = tabs.map((t) => t.id!).filter(Boolean)
+        if (tabIds.length >= 2) {
+          const groupId = await chrome.tabs.group({ tabIds: tabIds as [number, ...number[]] })
+          await chrome.tabGroups.update(groupId, {
+            title: group.name,
+            color: toChromeColor(group.color),
+          })
+        }
+      } catch {
+        // ignore
+      }
     }
   }
 }
 
-/**
- * 在新的浏览器窗口中打开分组
- */
 export async function splitToNewWindows(splitGroups: SplitGroup[]) {
   for (const group of splitGroups) {
     await createWindowWithGroup(group, false)
   }
 }
 
-/**
- * 替换当前所有窗口：关闭所有窗口后在新的浏览器窗口中打开分组
- */
 export async function splitReplaceCurrent(splitGroups: SplitGroup[]) {
-  // 关闭所有现有窗口
   const existingWindows = await chrome.windows.getAll()
   for (const w of existingWindows) {
     if (w.id && w.type === 'normal') {
@@ -80,7 +79,6 @@ export async function splitReplaceCurrent(splitGroups: SplitGroup[]) {
     }
   }
 
-  // 第一个分组聚焦，其余的 unfocused
   for (let i = 0; i < splitGroups.length; i++) {
     await createWindowWithGroup(splitGroups[i], i === 0)
   }
@@ -95,7 +93,6 @@ function toChromeColor(color: string) {
 
 const STORAGE_KEY_TAB_CREATED = 'tabflow_tab_created_at'
 
-/** 记录标签页创建时间 */
 export function recordTabCreated(tabId: number) {
   chrome.storage.local.get(STORAGE_KEY_TAB_CREATED).then((result) => {
     const map: Record<number, number> = (result[STORAGE_KEY_TAB_CREATED] as Record<number, number>) || {}
@@ -104,7 +101,6 @@ export function recordTabCreated(tabId: number) {
   })
 }
 
-/** 清理已关闭标签页的记录 */
 export function cleanupTabCreated(tabId: number) {
   chrome.storage.local.get(STORAGE_KEY_TAB_CREATED).then((result) => {
     const map: Record<number, number> = (result[STORAGE_KEY_TAB_CREATED] as Record<number, number>) || {}
@@ -113,7 +109,6 @@ export function cleanupTabCreated(tabId: number) {
   })
 }
 
-/** 获取标签页创建时间映射 */
 export async function getTabCreatedMap(): Promise<Record<number, number>> {
   const result = await chrome.storage.local.get(STORAGE_KEY_TAB_CREATED)
   return (result[STORAGE_KEY_TAB_CREATED] as Record<number, number>) || {}
