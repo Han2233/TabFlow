@@ -66,7 +66,12 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 // ====== 点击图标 → 侧边栏 ======
 
 chrome.action.onClicked.addListener(() => {
-  chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT })
+  (async () => {
+    try {
+      const win = await chrome.windows.getCurrent()
+      if (win?.id) await chrome.sidePanel.open({ windowId: win.id })
+    } catch {}
+  })()
 })
 
 // ====== 休眠逻辑 ======

@@ -40,7 +40,12 @@ export default function Popup() {
   }, [allTabs, groups, manualAssignments, groupsLoaded])
 
   const openSidePanel = useCallback(() => {
-    chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT })
+    (async () => {
+    try {
+      const win = await chrome.windows.getCurrent()
+      if (win?.id) await chrome.sidePanel.open({ windowId: win.id })
+    } catch {}
+  })()
     window.close()
   }, [])
 
